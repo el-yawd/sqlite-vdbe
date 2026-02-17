@@ -2633,6 +2633,271 @@ pub enum Insn {
     Explain,
 
     // =========================================================================
+    // Subtype Operations
+    // =========================================================================
+    /// Clear the subtype from register P1.
+    ///
+    /// This opcode clears the MEM_Subtype flag from the value in register P1.
+    ClrSubtype {
+        /// Register to clear subtype from
+        src: i32,
+    },
+
+    /// Get the subtype from register P1 and store it in register P2.
+    ///
+    /// Extract the subtype value from register P1 and write that subtype
+    /// into register P2. If P1 has no subtype, then P2 gets a NULL.
+    GetSubtype {
+        /// Source register
+        src: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Set the subtype of register P2 to the integer from register P1.
+    ///
+    /// Set the subtype value of register P2 to the integer from register P1.
+    /// If P1 is NULL, clear the subtype from P2.
+    SetSubtype {
+        /// Register containing subtype value
+        src: i32,
+        /// Register to set subtype on
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Cursor Locking
+    // =========================================================================
+    /// Lock the btree to which cursor P1 is pointing.
+    ///
+    /// Lock the btree so that it cannot be written by another cursor.
+    CursorLock {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    /// Unlock the btree to which cursor P1 is pointing.
+    ///
+    /// Unlock the btree so that it can be written by other cursors.
+    CursorUnlock {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    // =========================================================================
+    // Statement Control
+    // =========================================================================
+    /// Cause precompiled statements to expire.
+    ///
+    /// When an expired statement is executed using sqlite3_step() it will either
+    /// automatically reprepare itself (if it was originally created using
+    /// sqlite3_prepare_v2()) or it will fail with SQLITE_SCHEMA.
+    ///
+    /// If P1 is 0, then all SQL statements become expired. If P1 is non-zero,
+    /// then only the currently executing statement is expired.
+    ///
+    /// If P2 is 0, then SQL statements are expired immediately. If P2 is 1,
+    /// then running SQL statements are allowed to continue to run to completion.
+    Expire {
+        /// If 1, expire only current statement; if 0, expire all
+        current_only: i32,
+        /// If 1, allow running statements to complete; if 0, expire immediately
+        deferred: i32,
+    },
+
+    /// Reset the change counter.
+    ///
+    /// Copy the current change count to the database handle change counter
+    /// (returned by sqlite3_changes()) then reset the VDBE's change counter
+    /// to zero.
+    ResetCount,
+
+    // =========================================================================
+    // Vacuum Operations
+    // =========================================================================
+    /// Perform a single step of the incremental vacuum procedure on database P1.
+    ///
+    /// If the vacuum has finished, jump to instruction P2. Otherwise, fall
+    /// through to the next instruction.
+    IncrVacuum {
+        /// Database number
+        db_num: i32,
+        /// Jump target when done
+        target: i32,
+    },
+
+    // =========================================================================
+    // Size Estimation
+    // =========================================================================
+    /// Estimate the table size and jump if smaller than threshold.
+    ///
+    /// Check cursor P1 to see if the table has fewer rows than the log estimate
+    /// in P3. If so, jump to instruction P2. Otherwise, fall through.
+    IfSmaller {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if table is smaller
+        target: i32,
+        /// Log estimate threshold
+        threshold: i32,
+    },
+
+    // =========================================================================
+    // Debug/Tracing
+    // =========================================================================
+    /// Verify that an Abort can happen (debug only).
+    ///
+    /// Assert if an Abort at this point might cause database corruption.
+    /// This opcode only appears in debugging builds.
+    Abortable,
+
+    /// Trace opcode for debugging.
+    ///
+    /// Write a trace message. The P4 argument is a text string that is output
+    /// along with other trace information.
+    Trace,
+
+    // =========================================================================
+    // Memory Operations
+    // =========================================================================
+    /// Set register P1 to the maximum of P1 and P2.
+    ///
+    /// Register P1 must contain an integer. Compare the value in P1 with the
+    /// value in P2. If P2 is greater, then copy P2 into P1.
+    ///
+    /// This instruction throws an error if the memory cell is not initially
+    /// an integer.
+    MemMax {
+        /// Accumulator register
+        accum: i32,
+        /// Value register
+        value: i32,
+    },
+
+    /// Compute LIMIT + OFFSET.
+    ///
+    /// If LIMIT (P1) is less than or equal to zero, set P2 to -1 (infinite).
+    /// Otherwise compute LIMIT + OFFSET and store in P2. If the sum overflows,
+    /// also set P2 to -1.
+    OffsetLimit {
+        /// LIMIT register
+        limit: i32,
+        /// Destination register
+        dest: i32,
+        /// OFFSET register
+        offset: i32,
+    },
+
+    /// Release registers from service (debug only).
+    ///
+    /// Release P2 registers starting at P1. Any content in those registers
+    /// is unreliable after this opcode completes.
+    ///
+    /// P3 is a bitmask of registers to preserve (bit i set = preserve P1+i).
+    /// P5 flags cause released registers to be set to MEM_Undefined.
+    ReleaseReg {
+        /// Start register
+        start: i32,
+        /// Number of registers
+        count: i32,
+        /// Preserve mask
+        mask: i32,
+        /// Flags
+        flags: u16,
+    },
+
+    // =========================================================================
+    // RowSet Operations
+    // =========================================================================
+    /// Add an integer to a RowSet.
+    ///
+    /// Insert the integer value held in register P2 into a RowSet object
+    /// held in register P1. If P1 does not contain a RowSet, create one.
+    RowSetAdd {
+        /// RowSet register
+        rowset: i32,
+        /// Integer value register
+        value: i32,
+    },
+
+    /// Read a value from a RowSet.
+    ///
+    /// Extract the smallest value from the RowSet in P1 and put it in P3.
+    /// If the RowSet is empty, leave P3 unchanged and jump to P2.
+    RowSetRead {
+        /// RowSet register
+        rowset: i32,
+        /// Jump target if empty
+        target: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Test if a value is in a RowSet.
+    ///
+    /// Check if the integer in P3 is in the RowSet in P1. If found, jump to P2.
+    /// Otherwise, insert it into the RowSet and continue.
+    ///
+    /// P4 is an integer (set number) that identifies which set within the
+    /// RowSet to test/insert. If P4 is -1, only test; if P4 >= 0, also insert.
+    RowSetTest {
+        /// RowSet register
+        rowset: i32,
+        /// Jump target if found
+        target: i32,
+        /// Value register
+        value: i32,
+        /// Set number
+        set_num: i32,
+    },
+
+    // =========================================================================
+    // Bloom Filter Operations
+    // =========================================================================
+    /// Add a key to a bloom filter.
+    ///
+    /// Compute a hash on the P4 registers starting with r[P3] and add that
+    /// hash to the bloom filter contained in r[P1].
+    FilterAdd {
+        /// Bloom filter register
+        filter: i32,
+        /// Start of key registers
+        key_start: i32,
+        /// Number of key registers
+        key_count: i32,
+    },
+
+    /// Check if a key might be in a bloom filter.
+    ///
+    /// Compute a hash on the key in the P4 registers starting with r[P3].
+    /// Check if that hash is in the bloom filter in P1. If not present,
+    /// jump to P2. Otherwise fall through.
+    ///
+    /// False negatives are harmless - it's always safe to fall through.
+    Filter {
+        /// Bloom filter register
+        filter: i32,
+        /// Jump target if not in filter
+        target: i32,
+        /// Start of key registers
+        key_start: i32,
+        /// Number of key registers
+        key_count: i32,
+    },
+
+    // =========================================================================
+    // Comparison Operations
+    // =========================================================================
+    /// Jump if the previous comparison was equal.
+    ///
+    /// This opcode must immediately follow an OP_Lt or OP_Gt comparison.
+    /// If the comparison resulted in equality, jump to P2.
+    ElseEq {
+        /// Jump target if equal
+        target: i32,
+    },
+
+    // =========================================================================
     // Raw Opcode - For opcodes not yet wrapped
     // =========================================================================
     /// Raw opcode for advanced use
@@ -2863,6 +3128,46 @@ impl Insn {
 
             Insn::Noop => RawOpcode::Noop as u8,
             Insn::Explain => RawOpcode::Explain as u8,
+
+            // Subtype operations
+            Insn::ClrSubtype { .. } => RawOpcode::ClrSubtype as u8,
+            Insn::GetSubtype { .. } => RawOpcode::GetSubtype as u8,
+            Insn::SetSubtype { .. } => RawOpcode::SetSubtype as u8,
+
+            // Cursor locking
+            Insn::CursorLock { .. } => RawOpcode::CursorLock as u8,
+            Insn::CursorUnlock { .. } => RawOpcode::CursorUnlock as u8,
+
+            // Statement control
+            Insn::Expire { .. } => RawOpcode::Expire as u8,
+            Insn::ResetCount => RawOpcode::ResetCount as u8,
+
+            // Vacuum
+            Insn::IncrVacuum { .. } => RawOpcode::IncrVacuum as u8,
+
+            // Size estimation
+            Insn::IfSmaller { .. } => RawOpcode::IfSmaller as u8,
+
+            // Debug/tracing
+            Insn::Abortable => RawOpcode::Abortable as u8,
+            Insn::Trace => RawOpcode::Trace as u8,
+
+            // Memory operations
+            Insn::MemMax { .. } => RawOpcode::MemMax as u8,
+            Insn::OffsetLimit { .. } => RawOpcode::OffsetLimit as u8,
+            Insn::ReleaseReg { .. } => RawOpcode::ReleaseReg as u8,
+
+            // RowSet operations
+            Insn::RowSetAdd { .. } => RawOpcode::RowSetAdd as u8,
+            Insn::RowSetRead { .. } => RawOpcode::RowSetRead as u8,
+            Insn::RowSetTest { .. } => RawOpcode::RowSetTest as u8,
+
+            // Bloom filter operations
+            Insn::FilterAdd { .. } => RawOpcode::FilterAdd as u8,
+            Insn::Filter { .. } => RawOpcode::Filter as u8,
+
+            // Comparison
+            Insn::ElseEq { .. } => RawOpcode::ElseEq as u8,
 
             Insn::Raw { opcode, .. } => *opcode as u8,
         }
@@ -3175,6 +3480,46 @@ impl Insn {
             Insn::Noop => (0, 0, 0, 0),
             Insn::Explain => (0, 0, 0, 0),
 
+            // Subtype operations
+            Insn::ClrSubtype { src } => (*src, 0, 0, 0),
+            Insn::GetSubtype { src, dest } => (*src, *dest, 0, 0),
+            Insn::SetSubtype { src, dest } => (*src, *dest, 0, 0),
+
+            // Cursor locking
+            Insn::CursorLock { cursor } => (*cursor, 0, 0, 0),
+            Insn::CursorUnlock { cursor } => (*cursor, 0, 0, 0),
+
+            // Statement control
+            Insn::Expire { current_only, deferred } => (*current_only, *deferred, 0, 0),
+            Insn::ResetCount => (0, 0, 0, 0),
+
+            // Vacuum
+            Insn::IncrVacuum { db_num, target } => (*db_num, *target, 0, 0),
+
+            // Size estimation
+            Insn::IfSmaller { cursor, target, threshold } => (*cursor, *target, *threshold, 0),
+
+            // Debug/tracing
+            Insn::Abortable => (0, 0, 0, 0),
+            Insn::Trace => (0, 0, 0, 0),
+
+            // Memory operations
+            Insn::MemMax { accum, value } => (*accum, *value, 0, 0),
+            Insn::OffsetLimit { limit, dest, offset } => (*limit, *dest, *offset, 0),
+            Insn::ReleaseReg { start, count, mask, flags } => (*start, *count, *mask, *flags),
+
+            // RowSet operations
+            Insn::RowSetAdd { rowset, value } => (*rowset, *value, 0, 0),
+            Insn::RowSetRead { rowset, target, dest } => (*rowset, *target, *dest, 0),
+            Insn::RowSetTest { rowset, target, value, set_num } => (*rowset, *target, *value, *set_num as u16),
+
+            // Bloom filter operations
+            Insn::FilterAdd { filter, key_start, key_count } => (*filter, 0, *key_start, *key_count as u16),
+            Insn::Filter { filter, target, key_start, key_count } => (*filter, *target, *key_start, *key_count as u16),
+
+            // Comparison
+            Insn::ElseEq { target } => (0, *target, 0, 0),
+
             // Raw
             Insn::Raw { p1, p2, p3, p5, .. } => (*p1, *p2, *p3, *p5),
         }
@@ -3390,6 +3735,47 @@ impl Insn {
 
             Insn::Noop => "Noop",
             Insn::Explain => "Explain",
+
+            // Subtype operations
+            Insn::ClrSubtype { .. } => "ClrSubtype",
+            Insn::GetSubtype { .. } => "GetSubtype",
+            Insn::SetSubtype { .. } => "SetSubtype",
+
+            // Cursor locking
+            Insn::CursorLock { .. } => "CursorLock",
+            Insn::CursorUnlock { .. } => "CursorUnlock",
+
+            // Statement control
+            Insn::Expire { .. } => "Expire",
+            Insn::ResetCount => "ResetCount",
+
+            // Vacuum
+            Insn::IncrVacuum { .. } => "IncrVacuum",
+
+            // Size estimation
+            Insn::IfSmaller { .. } => "IfSmaller",
+
+            // Debug/tracing
+            Insn::Abortable => "Abortable",
+            Insn::Trace => "Trace",
+
+            // Memory operations
+            Insn::MemMax { .. } => "MemMax",
+            Insn::OffsetLimit { .. } => "OffsetLimit",
+            Insn::ReleaseReg { .. } => "ReleaseReg",
+
+            // RowSet operations
+            Insn::RowSetAdd { .. } => "RowSetAdd",
+            Insn::RowSetRead { .. } => "RowSetRead",
+            Insn::RowSetTest { .. } => "RowSetTest",
+
+            // Bloom filter operations
+            Insn::FilterAdd { .. } => "FilterAdd",
+            Insn::Filter { .. } => "Filter",
+
+            // Comparison
+            Insn::ElseEq { .. } => "ElseEq",
+
             Insn::Raw { .. } => "Raw",
         }
     }

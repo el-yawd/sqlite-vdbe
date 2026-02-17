@@ -4338,3 +4338,349 @@ fn test_max_pgcnt() {
     // The default max page count is typically very large (billions)
     assert!(max >= 0, "Max page count should be non-negative, got {}", max);
 }
+
+// ============================================================================
+// Subtype Operation Tests
+// ============================================================================
+
+#[test]
+fn test_subtype_instructions_exist() {
+    // Subtype operations manage the subtype flag on values
+    let _ = Insn::ClrSubtype { src: 1 };
+    let _ = Insn::GetSubtype { src: 1, dest: 2 };
+    let _ = Insn::SetSubtype { src: 1, dest: 2 };
+
+    assert_eq!(Insn::ClrSubtype { src: 1 }.name(), "ClrSubtype");
+    assert_eq!(Insn::GetSubtype { src: 1, dest: 2 }.name(), "GetSubtype");
+    assert_eq!(Insn::SetSubtype { src: 1, dest: 2 }.name(), "SetSubtype");
+}
+
+#[test]
+fn test_subtype_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::ClrSubtype { src: 1 }.raw_opcode(), RawOpcode::ClrSubtype as u8);
+    assert_eq!(Insn::GetSubtype { src: 1, dest: 2 }.raw_opcode(), RawOpcode::GetSubtype as u8);
+    assert_eq!(Insn::SetSubtype { src: 1, dest: 2 }.raw_opcode(), RawOpcode::SetSubtype as u8);
+}
+
+#[test]
+fn test_subtype_display() {
+    assert_eq!(format!("{}", Insn::ClrSubtype { src: 1 }), "ClrSubtype");
+    assert_eq!(format!("{}", Insn::GetSubtype { src: 1, dest: 2 }), "GetSubtype");
+    assert_eq!(format!("{}", Insn::SetSubtype { src: 1, dest: 2 }), "SetSubtype");
+}
+
+#[test]
+fn test_subtype_debug() {
+    let clr = Insn::ClrSubtype { src: 5 };
+    let debug_str = format!("{:?}", clr);
+    assert!(debug_str.contains("ClrSubtype"));
+    assert!(debug_str.contains("src: 5"));
+
+    let get = Insn::GetSubtype { src: 1, dest: 2 };
+    let debug_str = format!("{:?}", get);
+    assert!(debug_str.contains("GetSubtype"));
+    assert!(debug_str.contains("src: 1"));
+    assert!(debug_str.contains("dest: 2"));
+}
+
+#[test]
+fn test_subtype_clone() {
+    let clr = Insn::ClrSubtype { src: 5 };
+    let cloned = clr.clone();
+    assert_eq!(clr.raw_opcode(), cloned.raw_opcode());
+}
+
+// ============================================================================
+// Cursor Lock/Unlock Tests
+// ============================================================================
+
+#[test]
+fn test_cursor_lock_instructions_exist() {
+    let _ = Insn::CursorLock { cursor: 0 };
+    let _ = Insn::CursorUnlock { cursor: 0 };
+
+    assert_eq!(Insn::CursorLock { cursor: 0 }.name(), "CursorLock");
+    assert_eq!(Insn::CursorUnlock { cursor: 0 }.name(), "CursorUnlock");
+}
+
+#[test]
+fn test_cursor_lock_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::CursorLock { cursor: 0 }.raw_opcode(), RawOpcode::CursorLock as u8);
+    assert_eq!(Insn::CursorUnlock { cursor: 0 }.raw_opcode(), RawOpcode::CursorUnlock as u8);
+}
+
+#[test]
+fn test_cursor_lock_display() {
+    assert_eq!(format!("{}", Insn::CursorLock { cursor: 0 }), "CursorLock");
+    assert_eq!(format!("{}", Insn::CursorUnlock { cursor: 0 }), "CursorUnlock");
+}
+
+// ============================================================================
+// Expire Tests
+// ============================================================================
+
+#[test]
+fn test_expire_instruction_exists() {
+    let _ = Insn::Expire { current_only: 0, deferred: 0 };
+    let _ = Insn::Expire { current_only: 1, deferred: 1 };
+
+    assert_eq!(Insn::Expire { current_only: 0, deferred: 0 }.name(), "Expire");
+}
+
+#[test]
+fn test_expire_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::Expire { current_only: 0, deferred: 0 }.raw_opcode(), RawOpcode::Expire as u8);
+}
+
+#[test]
+fn test_expire_display() {
+    assert_eq!(format!("{}", Insn::Expire { current_only: 0, deferred: 0 }), "Expire");
+}
+
+// ============================================================================
+// ResetCount Tests
+// ============================================================================
+
+#[test]
+fn test_reset_count_instruction_exists() {
+    let _ = Insn::ResetCount;
+    assert_eq!(Insn::ResetCount.name(), "ResetCount");
+}
+
+#[test]
+fn test_reset_count_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::ResetCount.raw_opcode(), RawOpcode::ResetCount as u8);
+}
+
+#[test]
+fn test_reset_count_display() {
+    assert_eq!(format!("{}", Insn::ResetCount), "ResetCount");
+}
+
+// ============================================================================
+// IncrVacuum Tests
+// ============================================================================
+
+#[test]
+fn test_incr_vacuum_instruction_exists() {
+    let _ = Insn::IncrVacuum { db_num: 0, target: 5 };
+    assert_eq!(Insn::IncrVacuum { db_num: 0, target: 5 }.name(), "IncrVacuum");
+}
+
+#[test]
+fn test_incr_vacuum_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::IncrVacuum { db_num: 0, target: 5 }.raw_opcode(), RawOpcode::IncrVacuum as u8);
+}
+
+#[test]
+fn test_incr_vacuum_display() {
+    assert_eq!(format!("{}", Insn::IncrVacuum { db_num: 0, target: 5 }), "IncrVacuum");
+}
+
+// ============================================================================
+// IfSmaller Tests
+// ============================================================================
+
+#[test]
+fn test_if_smaller_instruction_exists() {
+    let _ = Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 };
+    assert_eq!(Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }.name(), "IfSmaller");
+}
+
+#[test]
+fn test_if_smaller_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }.raw_opcode(), RawOpcode::IfSmaller as u8);
+}
+
+#[test]
+fn test_if_smaller_display() {
+    assert_eq!(format!("{}", Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }), "IfSmaller");
+}
+
+// ============================================================================
+// Debug/Tracing Tests
+// ============================================================================
+
+#[test]
+fn test_abortable_instruction_exists() {
+    let _ = Insn::Abortable;
+    assert_eq!(Insn::Abortable.name(), "Abortable");
+}
+
+#[test]
+fn test_abortable_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::Abortable.raw_opcode(), RawOpcode::Abortable as u8);
+}
+
+#[test]
+fn test_trace_instruction_exists() {
+    let _ = Insn::Trace;
+    assert_eq!(Insn::Trace.name(), "Trace");
+}
+
+#[test]
+fn test_trace_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::Trace.raw_opcode(), RawOpcode::Trace as u8);
+}
+
+// ============================================================================
+// MemMax Tests
+// ============================================================================
+
+#[test]
+fn test_mem_max_instruction_exists() {
+    let _ = Insn::MemMax { accum: 1, value: 2 };
+    assert_eq!(Insn::MemMax { accum: 1, value: 2 }.name(), "MemMax");
+}
+
+#[test]
+fn test_mem_max_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::MemMax { accum: 1, value: 2 }.raw_opcode(), RawOpcode::MemMax as u8);
+}
+
+#[test]
+fn test_mem_max_display() {
+    assert_eq!(format!("{}", Insn::MemMax { accum: 1, value: 2 }), "MemMax");
+}
+
+// ============================================================================
+// OffsetLimit Tests
+// ============================================================================
+
+#[test]
+fn test_offset_limit_instruction_exists() {
+    let _ = Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 };
+    assert_eq!(Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }.name(), "OffsetLimit");
+}
+
+#[test]
+fn test_offset_limit_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }.raw_opcode(), RawOpcode::OffsetLimit as u8);
+}
+
+#[test]
+fn test_offset_limit_display() {
+    assert_eq!(format!("{}", Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }), "OffsetLimit");
+}
+
+// ============================================================================
+// ReleaseReg Tests
+// ============================================================================
+
+#[test]
+fn test_release_reg_instruction_exists() {
+    let _ = Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 };
+    assert_eq!(Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }.name(), "ReleaseReg");
+}
+
+#[test]
+fn test_release_reg_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }.raw_opcode(), RawOpcode::ReleaseReg as u8);
+}
+
+#[test]
+fn test_release_reg_display() {
+    assert_eq!(format!("{}", Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }), "ReleaseReg");
+}
+
+// ============================================================================
+// RowSet Tests
+// ============================================================================
+
+#[test]
+fn test_rowset_instructions_exist() {
+    let _ = Insn::RowSetAdd { rowset: 1, value: 2 };
+    let _ = Insn::RowSetRead { rowset: 1, target: 5, dest: 3 };
+    let _ = Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 };
+
+    assert_eq!(Insn::RowSetAdd { rowset: 1, value: 2 }.name(), "RowSetAdd");
+    assert_eq!(Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }.name(), "RowSetRead");
+    assert_eq!(Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }.name(), "RowSetTest");
+}
+
+#[test]
+fn test_rowset_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::RowSetAdd { rowset: 1, value: 2 }.raw_opcode(), RawOpcode::RowSetAdd as u8);
+    assert_eq!(Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }.raw_opcode(), RawOpcode::RowSetRead as u8);
+    assert_eq!(Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }.raw_opcode(), RawOpcode::RowSetTest as u8);
+}
+
+#[test]
+fn test_rowset_display() {
+    assert_eq!(format!("{}", Insn::RowSetAdd { rowset: 1, value: 2 }), "RowSetAdd");
+    assert_eq!(format!("{}", Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }), "RowSetRead");
+    assert_eq!(format!("{}", Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }), "RowSetTest");
+}
+
+// ============================================================================
+// Filter/FilterAdd Tests
+// ============================================================================
+
+#[test]
+fn test_filter_instructions_exist() {
+    let _ = Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 };
+    let _ = Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 };
+
+    assert_eq!(Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }.name(), "FilterAdd");
+    assert_eq!(Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }.name(), "Filter");
+}
+
+#[test]
+fn test_filter_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }.raw_opcode(), RawOpcode::FilterAdd as u8);
+    assert_eq!(Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }.raw_opcode(), RawOpcode::Filter as u8);
+}
+
+#[test]
+fn test_filter_display() {
+    assert_eq!(format!("{}", Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }), "FilterAdd");
+    assert_eq!(format!("{}", Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }), "Filter");
+}
+
+// ============================================================================
+// ElseEq Tests
+// ============================================================================
+
+#[test]
+fn test_else_eq_instruction_exists() {
+    let _ = Insn::ElseEq { target: 5 };
+    assert_eq!(Insn::ElseEq { target: 5 }.name(), "ElseEq");
+}
+
+#[test]
+fn test_else_eq_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(Insn::ElseEq { target: 5 }.raw_opcode(), RawOpcode::ElseEq as u8);
+}
+
+#[test]
+fn test_else_eq_display() {
+    assert_eq!(format!("{}", Insn::ElseEq { target: 5 }), "ElseEq");
+}
