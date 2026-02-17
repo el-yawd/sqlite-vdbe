@@ -18,7 +18,7 @@ Add this to your `Cargo.toml`:
 sqlite-vdbe = "0.0.1"
 ```
 
-SQLite 3.45.0 is bundled and compiled automatically during build.
+SQLite 3.51.2 is bundled and compiled automatically during build.
 
 ## Quick Start
 
@@ -106,7 +106,7 @@ This crate compiles SQLite with `SQLITE_THREADSAFE=0` for simplicity. All types 
 
 ## Features
 
-- `bundled` (default): Compiles the bundled SQLite 3.45.0 amalgamation
+- `bundled` (default): Compiles the bundled SQLite 3.51.2 amalgamation
 
 ## Requirements
 

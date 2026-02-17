@@ -5565,54 +5565,106 @@ fn test_incr_vacuum_display() {
 }
 
 // ============================================================================
-// IfSmaller Tests
+// IfSizeBetween Tests
 // ============================================================================
 
 #[test]
-fn test_if_smaller_instruction_exists() {
-    let _ = Insn::IfSmaller {
+fn test_if_size_between_instruction_exists() {
+    let _ = Insn::IfSizeBetween {
         cursor: 0,
         target: 5,
-        threshold: 10,
+        lower: 10,
+        upper: 100,
     };
     assert_eq!(
-        Insn::IfSmaller {
+        Insn::IfSizeBetween {
             cursor: 0,
             target: 5,
-            threshold: 10
+            lower: 10,
+            upper: 100
         }
         .name(),
-        "IfSmaller"
+        "IfSizeBetween"
     );
 }
 
 #[test]
-fn test_if_smaller_raw_opcode() {
+fn test_if_size_between_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
     assert_eq!(
-        Insn::IfSmaller {
+        Insn::IfSizeBetween {
             cursor: 0,
             target: 5,
-            threshold: 10
+            lower: 10,
+            upper: 100
         }
         .raw_opcode(),
-        RawOpcode::IfSmaller as u8
+        RawOpcode::IfSizeBetween as u8
     );
 }
 
 #[test]
-fn test_if_smaller_display() {
+fn test_if_size_between_display() {
     assert_eq!(
         format!(
             "{}",
-            Insn::IfSmaller {
+            Insn::IfSizeBetween {
                 cursor: 0,
                 target: 5,
-                threshold: 10
+                lower: 10,
+                upper: 100
             }
         ),
-        "IfSmaller"
+        "IfSizeBetween"
+    );
+}
+
+// ============================================================================
+// IfEmpty Tests
+// ============================================================================
+
+#[test]
+fn test_if_empty_instruction_exists() {
+    let _ = Insn::IfEmpty {
+        cursor: 0,
+        target: 5,
+    };
+    assert_eq!(
+        Insn::IfEmpty {
+            cursor: 0,
+            target: 5
+        }
+        .name(),
+        "IfEmpty"
+    );
+}
+
+#[test]
+fn test_if_empty_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+
+    assert_eq!(
+        Insn::IfEmpty {
+            cursor: 0,
+            target: 5
+        }
+        .raw_opcode(),
+        RawOpcode::IfEmpty as u8
+    );
+}
+
+#[test]
+fn test_if_empty_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::IfEmpty {
+                cursor: 0,
+                target: 5
+            }
+        ),
+        "IfEmpty"
     );
 }
 
