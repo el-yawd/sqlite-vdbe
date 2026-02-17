@@ -12,9 +12,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: apt-get update && apt-get install -y python3 curl
-
       - name: Download SQLite opcode docs
         run: curl -fsSL https://sqlite.org/opcode.html -o /tmp/opcode.html
 
