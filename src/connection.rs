@@ -15,10 +15,8 @@ static SQLITE_INIT: Once = Once::new();
 
 /// Initialize SQLite library. Called automatically on first connection.
 fn ensure_sqlite_initialized() {
-    SQLITE_INIT.call_once(|| {
-        unsafe {
-            ffi::sqlite3_initialize();
-        }
+    SQLITE_INIT.call_once(|| unsafe {
+        ffi::sqlite3_initialize();
     });
 }
 
@@ -65,11 +63,11 @@ impl Connection {
     /// # Ok::<(), sqlite_vdbe::Error>(())
     /// ```
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let path_str = path
-            .as_ref()
-            .to_str()
-            .ok_or(Error::InvalidPath)?;
-        Self::open_with_flags(path_str, ffi::SQLITE_OPEN_READWRITE | ffi::SQLITE_OPEN_CREATE)
+        let path_str = path.as_ref().to_str().ok_or(Error::InvalidPath)?;
+        Self::open_with_flags(
+            path_str,
+            ffi::SQLITE_OPEN_READWRITE | ffi::SQLITE_OPEN_CREATE,
+        )
     }
 
     /// Open an in-memory database
@@ -102,9 +100,7 @@ impl Connection {
         let c_path = CString::new(path)?;
         let mut db: *mut ffi::sqlite3 = ptr::null_mut();
 
-        let rc = unsafe {
-            ffi::sqlite3_open_v2(c_path.as_ptr(), &mut db, flags, ptr::null())
-        };
+        let rc = unsafe { ffi::sqlite3_open_v2(c_path.as_ptr(), &mut db, flags, ptr::null()) };
 
         if rc != ffi::SQLITE_OK {
             // Get error message before potentially closing

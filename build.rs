@@ -31,10 +31,10 @@ fn main() {
 
         // Create combined source: amalgamation + vdbe_rust.c
         let combined_source = out_dir.join("sqlite3_combined.c");
-        let amalgamation_content = fs::read_to_string(&amalgamation)
-            .expect("Failed to read sqlite3.c");
-        let vdbe_rust_content = fs::read_to_string(&vdbe_rust_c)
-            .expect("Failed to read vdbe_rust.c");
+        let amalgamation_content =
+            fs::read_to_string(&amalgamation).expect("Failed to read sqlite3.c");
+        let vdbe_rust_content =
+            fs::read_to_string(&vdbe_rust_c).expect("Failed to read vdbe_rust.c");
 
         let combined = format!(
             "// Combined SQLite amalgamation with VDBE Rust helpers\n\
@@ -43,11 +43,9 @@ fn main() {
             // ---- vdbe_rust.c ----\n\
             #define VDBE_RUST_AMALGAMATION 1\n\
             {}\n",
-            amalgamation_content,
-            vdbe_rust_content
+            amalgamation_content, vdbe_rust_content
         );
-        fs::write(&combined_source, combined)
-            .expect("Failed to write combined source");
+        fs::write(&combined_source, combined).expect("Failed to write combined source");
 
         let mut build = cc::Build::new();
 
@@ -92,19 +90,14 @@ fn download_amalgamation(dest_dir: &PathBuf) -> io::Result<()> {
 
     // Extract the zip
     let cursor = Cursor::new(zip_data);
-    let mut archive = zip::ZipArchive::new(cursor)
-        .map_err(io::Error::other)?;
+    let mut archive = zip::ZipArchive::new(cursor).map_err(io::Error::other)?;
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i)
-            .map_err(io::Error::other)?;
+        let mut file = archive.by_index(i).map_err(io::Error::other)?;
 
         let name = file.name().to_string();
         if name.ends_with("sqlite3.c") || name.ends_with("sqlite3.h") {
-            let filename = PathBuf::from(&name)
-                .file_name()
-                .unwrap()
-                .to_os_string();
+            let filename = PathBuf::from(&name).file_name().unwrap().to_os_string();
             let dest_path = dest_dir.join(filename);
 
             let mut content = Vec::new();
@@ -125,9 +118,7 @@ fn download_url(url: &str) -> io::Result<Vec<u8>> {
         .output();
 
     match output {
-        Ok(output) if output.status.success() => {
-            Ok(output.stdout)
-        }
+        Ok(output) if output.status.success() => Ok(output.stdout),
         _ => {
             // Try wget as fallback
             let output = std::process::Command::new("wget")
@@ -135,13 +126,11 @@ fn download_url(url: &str) -> io::Result<Vec<u8>> {
                 .output();
 
             match output {
-                Ok(output) if output.status.success() => {
-                    Ok(output.stdout)
-                }
+                Ok(output) if output.status.success() => Ok(output.stdout),
                 _ => Err(io::Error::other(
                     "Failed to download SQLite. Please install curl or wget, \
-                     or manually download the amalgamation from https://sqlite.org/download.html"
-                ))
+                     or manually download the amalgamation from https://sqlite.org/download.html",
+                )),
             }
         }
     }

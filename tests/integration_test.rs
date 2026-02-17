@@ -19,8 +19,14 @@ fn test_simple_integer_program() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -49,10 +55,23 @@ fn test_addition_program() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 10, dest: r1 });
-    builder.add(Insn::Integer { value: 32, dest: r2 });
-    builder.add(Insn::Add { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Integer {
+        value: 10,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: 32,
+        dest: r2,
+    });
+    builder.add(Insn::Add {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -70,11 +89,20 @@ fn test_multiple_rows() {
     let r1 = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 1, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Integer { value: 2, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Integer { value: 3, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -99,10 +127,22 @@ fn test_multiple_columns() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 100, dest: r1 });
-    builder.add(Insn::Integer { value: 200, dest: r2 });
-    builder.add(Insn::Integer { value: 300, dest: r3 });
-    builder.add(Insn::ResultRow { start: r1, count: 3 });
+    builder.add(Insn::Integer {
+        value: 100,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: 200,
+        dest: r2,
+    });
+    builder.add(Insn::Integer {
+        value: 300,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 3,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(3).expect("Failed to finish program");
@@ -129,16 +169,42 @@ fn test_arithmetic_operations() {
     let r_div = builder.alloc_register();
     let r_rem = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 17, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 17,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 5, dest: r2 });
 
-    builder.add(Insn::Add { lhs: r1, rhs: r2, dest: r_add });
-    builder.add(Insn::Subtract { lhs: r1, rhs: r2, dest: r_sub });
-    builder.add(Insn::Multiply { lhs: r1, rhs: r2, dest: r_mul });
-    builder.add(Insn::Divide { lhs: r1, rhs: r2, dest: r_div });
-    builder.add(Insn::Remainder { lhs: r1, rhs: r2, dest: r_rem });
+    builder.add(Insn::Add {
+        lhs: r1,
+        rhs: r2,
+        dest: r_add,
+    });
+    builder.add(Insn::Subtract {
+        lhs: r1,
+        rhs: r2,
+        dest: r_sub,
+    });
+    builder.add(Insn::Multiply {
+        lhs: r1,
+        rhs: r2,
+        dest: r_mul,
+    });
+    builder.add(Insn::Divide {
+        lhs: r1,
+        rhs: r2,
+        dest: r_div,
+    });
+    builder.add(Insn::Remainder {
+        lhs: r1,
+        rhs: r2,
+        dest: r_rem,
+    });
 
-    builder.add(Insn::ResultRow { start: r_add, count: 5 });
+    builder.add(Insn::ResultRow {
+        start: r_add,
+        count: 5,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(5).expect("Failed to finish program");
@@ -146,11 +212,11 @@ fn test_arithmetic_operations() {
     let result = program.step().expect("Failed to step");
     assert_eq!(result, StepResult::Row);
 
-    assert_eq!(program.column_int(0), 22);  // 17 + 5
-    assert_eq!(program.column_int(1), 12);  // 17 - 5
-    assert_eq!(program.column_int(2), 85);  // 17 * 5
-    assert_eq!(program.column_int(3), 3);   // 17 / 5
-    assert_eq!(program.column_int(4), 2);   // 17 % 5
+    assert_eq!(program.column_int(0), 22); // 17 + 5
+    assert_eq!(program.column_int(1), 12); // 17 - 5
+    assert_eq!(program.column_int(2), 85); // 17 * 5
+    assert_eq!(program.column_int(3), 3); // 17 / 5
+    assert_eq!(program.column_int(4), 2); // 17 % 5
 }
 
 #[test]
@@ -159,8 +225,14 @@ fn test_program_reset() {
     let mut builder = conn.new_program().expect("Failed to create program");
 
     let r1 = builder.alloc_register();
-    builder.add(Insn::Integer { value: 123, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 123,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -186,7 +258,10 @@ fn test_null_value() {
     let r1 = builder.alloc_register();
 
     builder.add(Insn::Null { dest: r1, count: 1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -204,10 +279,19 @@ fn test_jump_here() {
     let r1 = builder.alloc_register();
 
     let jump_addr = builder.add(Insn::Goto { target: 0 });
-    builder.add(Insn::Integer { value: 999, dest: r1 }); // Skipped
+    builder.add(Insn::Integer {
+        value: 999,
+        dest: r1,
+    }); // Skipped
     builder.jump_here(jump_addr);
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -227,16 +311,29 @@ fn test_comparison_eq() {
 
     builder.add(Insn::Integer { value: 5, dest: r1 });
     builder.add(Insn::Integer { value: 5, dest: r2 });
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
-    let eq_addr = builder.add(Insn::Eq { lhs: r1, rhs: r2, target: 0 });
+    let eq_addr = builder.add(Insn::Eq {
+        lhs: r1,
+        rhs: r2,
+        target: 0,
+    });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(eq_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -253,9 +350,15 @@ fn test_copy_instruction() {
     let r1 = builder.alloc_register();
     let r2 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::SCopy { src: r1, dest: r2 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -276,8 +379,14 @@ fn test_integer_max_value() {
     let r1 = builder.alloc_register();
 
     // i32::MAX
-    builder.add(Insn::Integer { value: i32::MAX, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: i32::MAX,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -293,8 +402,14 @@ fn test_integer_min_value() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: i32::MIN, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: i32::MIN,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -313,9 +428,18 @@ fn test_int64_large_values() {
     let r1 = builder.alloc_register();
     let r2 = builder.alloc_register();
 
-    builder.add(Insn::Int64 { value: i64::MAX, dest: r1 });
-    builder.add(Insn::Int64 { value: i64::MIN, dest: r2 });
-    builder.add(Insn::ResultRow { start: r1, count: 2 });
+    builder.add(Insn::Int64 {
+        value: i64::MAX,
+        dest: r1,
+    });
+    builder.add(Insn::Int64 {
+        value: i64::MIN,
+        dest: r2,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 2,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(2).expect("Failed to finish program");
@@ -333,7 +457,10 @@ fn test_integer_zero() {
     let r1 = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 0, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -351,10 +478,22 @@ fn test_negative_integers() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: -1, dest: r1 });
-    builder.add(Insn::Integer { value: -100, dest: r2 });
-    builder.add(Insn::Integer { value: -999999, dest: r3 });
-    builder.add(Insn::ResultRow { start: r1, count: 3 });
+    builder.add(Insn::Integer {
+        value: -1,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: -100,
+        dest: r2,
+    });
+    builder.add(Insn::Integer {
+        value: -999999,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 3,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(3).expect("Failed to finish program");
@@ -378,10 +517,23 @@ fn test_add_negative_numbers() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: -10, dest: r1 });
-    builder.add(Insn::Integer { value: -20, dest: r2 });
-    builder.add(Insn::Add { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Integer {
+        value: -10,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: -20,
+        dest: r2,
+    });
+    builder.add(Insn::Add {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -400,9 +552,19 @@ fn test_subtract_to_negative() {
     let r3 = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 5, dest: r1 });
-    builder.add(Insn::Integer { value: 10, dest: r2 });
-    builder.add(Insn::Subtract { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Integer {
+        value: 10,
+        dest: r2,
+    });
+    builder.add(Insn::Subtract {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -420,10 +582,20 @@ fn test_multiply_by_zero() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 1000000, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 1000000,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 0, dest: r2 });
-    builder.add(Insn::Multiply { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Multiply {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -442,17 +614,37 @@ fn test_multiply_negative_numbers() {
     let r3 = builder.alloc_register();
     let r4 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: -5, dest: r1 });
+    builder.add(Insn::Integer {
+        value: -5,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 3, dest: r2 });
-    builder.add(Insn::Integer { value: -4, dest: r3 });
+    builder.add(Insn::Integer {
+        value: -4,
+        dest: r3,
+    });
 
     // -5 * 3 = -15
-    builder.add(Insn::Multiply { lhs: r1, rhs: r2, dest: r4 });
-    builder.add(Insn::ResultRow { start: r4, count: 1 });
+    builder.add(Insn::Multiply {
+        lhs: r1,
+        rhs: r2,
+        dest: r4,
+    });
+    builder.add(Insn::ResultRow {
+        start: r4,
+        count: 1,
+    });
 
     // -5 * -4 = 20
-    builder.add(Insn::Multiply { lhs: r1, rhs: r3, dest: r4 });
-    builder.add(Insn::ResultRow { start: r4, count: 1 });
+    builder.add(Insn::Multiply {
+        lhs: r1,
+        rhs: r3,
+        dest: r4,
+    });
+    builder.add(Insn::ResultRow {
+        start: r4,
+        count: 1,
+    });
 
     builder.add(Insn::Halt);
 
@@ -474,10 +666,20 @@ fn test_divide_by_zero_returns_null() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 0, dest: r2 });
-    builder.add(Insn::Divide { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Divide {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -496,10 +698,20 @@ fn test_remainder_by_zero_returns_null() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 0, dest: r2 });
-    builder.add(Insn::Remainder { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Remainder {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -518,10 +730,20 @@ fn test_remainder_with_negatives() {
     let r3 = builder.alloc_register();
 
     // -17 % 5
-    builder.add(Insn::Integer { value: -17, dest: r1 });
+    builder.add(Insn::Integer {
+        value: -17,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 5, dest: r2 });
-    builder.add(Insn::Remainder { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Remainder {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -542,8 +764,15 @@ fn test_integer_division_truncates() {
 
     builder.add(Insn::Integer { value: 7, dest: r1 });
     builder.add(Insn::Integer { value: 3, dest: r2 });
-    builder.add(Insn::Divide { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Divide {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -565,10 +794,23 @@ fn test_bitwise_and() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 0b1100, dest: r1 }); // 12
-    builder.add(Insn::Integer { value: 0b1010, dest: r2 }); // 10
-    builder.add(Insn::BitAnd { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Integer {
+        value: 0b1100,
+        dest: r1,
+    }); // 12
+    builder.add(Insn::Integer {
+        value: 0b1010,
+        dest: r2,
+    }); // 10
+    builder.add(Insn::BitAnd {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -586,10 +828,23 @@ fn test_bitwise_or() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 0b1100, dest: r1 }); // 12
-    builder.add(Insn::Integer { value: 0b1010, dest: r2 }); // 10
-    builder.add(Insn::BitOr { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Integer {
+        value: 0b1100,
+        dest: r1,
+    }); // 12
+    builder.add(Insn::Integer {
+        value: 0b1010,
+        dest: r2,
+    }); // 10
+    builder.add(Insn::BitOr {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -608,7 +863,10 @@ fn test_bitwise_not() {
 
     builder.add(Insn::Integer { value: 0, dest: r1 });
     builder.add(Insn::BitNot { src: r1, dest: r2 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -628,8 +886,15 @@ fn test_shift_left() {
 
     builder.add(Insn::Integer { value: 1, dest: r1 });
     builder.add(Insn::Integer { value: 4, dest: r2 });
-    builder.add(Insn::ShiftLeft { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::ShiftLeft {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -647,10 +912,20 @@ fn test_shift_right() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 32, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 32,
+        dest: r1,
+    });
     builder.add(Insn::Integer { value: 2, dest: r2 });
-    builder.add(Insn::ShiftRight { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::ShiftRight {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -674,7 +949,10 @@ fn test_null_multiple_registers() {
 
     // Set 3 consecutive registers to NULL
     builder.add(Insn::Null { dest: r1, count: 3 });
-    builder.add(Insn::ResultRow { start: r1, count: 3 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 3,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(3).expect("Failed to finish program");
@@ -694,10 +972,20 @@ fn test_add_with_null() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::Null { dest: r2, count: 1 });
-    builder.add(Insn::Add { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Add {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -716,16 +1004,25 @@ fn test_is_null_instruction() {
     let r_result = builder.alloc_register();
 
     builder.add(Insn::Null { dest: r1, count: 1 });
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
     let is_null_addr = builder.add(Insn::IsNull { src: r1, target: 0 });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(is_null_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -742,17 +1039,29 @@ fn test_not_null_instruction() {
     let r1 = builder.alloc_register();
     let r_result = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
     let not_null_addr = builder.add(Insn::NotNull { src: r1, target: 0 });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(not_null_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -774,16 +1083,29 @@ fn test_if_true() {
     let r_result = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 1, dest: r1 }); // Non-zero = true
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
-    let if_addr = builder.add(Insn::If { src: r1, target: 0, jump_if_null: false });
+    let if_addr = builder.add(Insn::If {
+        src: r1,
+        target: 0,
+        jump_if_null: false,
+    });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(if_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -801,16 +1123,29 @@ fn test_if_false() {
     let r_result = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 0, dest: r1 }); // Zero = false
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
-    let if_addr = builder.add(Insn::If { src: r1, target: 0, jump_if_null: false });
+    let if_addr = builder.add(Insn::If {
+        src: r1,
+        target: 0,
+        jump_if_null: false,
+    });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(if_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -828,16 +1163,29 @@ fn test_ifnot_instruction() {
     let r_result = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 0, dest: r1 }); // Zero
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
-    let ifnot_addr = builder.add(Insn::IfNot { src: r1, target: 0, jump_if_null: false });
+    let ifnot_addr = builder.add(Insn::IfNot {
+        src: r1,
+        target: 0,
+        jump_if_null: false,
+    });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(ifnot_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -856,15 +1204,31 @@ fn test_loop_with_ifnotzero() {
     let r_sum = builder.alloc_register();
 
     // Initialize: counter = 5, sum = 0
-    builder.add(Insn::Integer { value: 5, dest: r_counter });
-    builder.add(Insn::Integer { value: 0, dest: r_sum });
+    builder.add(Insn::Integer {
+        value: 5,
+        dest: r_counter,
+    });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_sum,
+    });
 
     // Loop: add counter to sum, then decrement and loop back while not zero
     let loop_start = builder.current_addr();
-    builder.add(Insn::Add { lhs: r_sum, rhs: r_counter, dest: r_sum });
-    builder.add(Insn::IfNotZero { src: r_counter, target: loop_start.raw() });
+    builder.add(Insn::Add {
+        lhs: r_sum,
+        rhs: r_counter,
+        dest: r_sum,
+    });
+    builder.add(Insn::IfNotZero {
+        src: r_counter,
+        target: loop_start.raw(),
+    });
 
-    builder.add(Insn::ResultRow { start: r_sum, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_sum,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -890,16 +1254,29 @@ fn test_ifpos_instruction() {
     let r_result = builder.alloc_register();
 
     builder.add(Insn::Integer { value: 5, dest: r1 });
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
-    let ifpos_addr = builder.add(Insn::IfPos { src: r1, target: 0, decrement: 0 });
+    let ifpos_addr = builder.add(Insn::IfPos {
+        src: r1,
+        target: 0,
+        decrement: 0,
+    });
     let goto_addr = builder.add(Insn::Goto { target: 0 });
 
     builder.jump_here(ifpos_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
     builder.jump_here(goto_addr);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -918,17 +1295,33 @@ fn test_ifnotzero_instruction() {
     let r_sum = builder.alloc_register();
 
     // Initialize counter=3, sum=0
-    builder.add(Insn::Integer { value: 3, dest: r_counter });
-    builder.add(Insn::Integer { value: 0, dest: r_sum });
+    builder.add(Insn::Integer {
+        value: 3,
+        dest: r_counter,
+    });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_sum,
+    });
 
     // Loop: IfNotZero decrements counter and jumps if not zero
     // So we add BEFORE the decrement happens
     let loop_start = builder.current_addr();
-    builder.add(Insn::Add { lhs: r_sum, rhs: r_counter, dest: r_sum });
+    builder.add(Insn::Add {
+        lhs: r_sum,
+        rhs: r_counter,
+        dest: r_sum,
+    });
     // IfNotZero checks if counter != 0, decrements, and jumps if it was not zero
-    builder.add(Insn::IfNotZero { src: r_counter, target: loop_start.raw() });
+    builder.add(Insn::IfNotZero {
+        src: r_counter,
+        target: loop_start.raw(),
+    });
 
-    builder.add(Insn::ResultRow { start: r_sum, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_sum,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -960,7 +1353,16 @@ fn test_ifnotzero_instruction() {
 #[test]
 fn test_all_comparisons() {
     // Test each comparison individually to avoid register ordering issues
-    fn test_cmp(a: i32, b: i32, expected_eq: bool, expected_ne: bool, expected_lt: bool, expected_le: bool, expected_gt: bool, expected_ge: bool) {
+    fn test_cmp(
+        a: i32,
+        b: i32,
+        expected_eq: bool,
+        expected_ne: bool,
+        expected_lt: bool,
+        expected_le: bool,
+        expected_gt: bool,
+        expected_ge: bool,
+    ) {
         // Test Eq
         {
             let mut conn = Connection::open_in_memory().expect("Failed to open connection");
@@ -971,19 +1373,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let eq_addr = builder.add(Insn::Eq { lhs: r1, rhs: r2, target: 0 });
+            let eq_addr = builder.add(Insn::Eq {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(eq_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_eq, "Eq failed for {} == {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_eq,
+                "Eq failed for {} == {}",
+                a,
+                b
+            );
         }
 
         // Test Ne
@@ -996,19 +1417,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let ne_addr = builder.add(Insn::Ne { lhs: r1, rhs: r2, target: 0 });
+            let ne_addr = builder.add(Insn::Ne {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(ne_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_ne, "Ne failed for {} != {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_ne,
+                "Ne failed for {} != {}",
+                a,
+                b
+            );
         }
 
         // Test Lt
@@ -1021,19 +1461,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let lt_addr = builder.add(Insn::Lt { lhs: r1, rhs: r2, target: 0 });
+            let lt_addr = builder.add(Insn::Lt {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(lt_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_lt, "Lt failed for {} < {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_lt,
+                "Lt failed for {} < {}",
+                a,
+                b
+            );
         }
 
         // Test Le
@@ -1046,19 +1505,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let le_addr = builder.add(Insn::Le { lhs: r1, rhs: r2, target: 0 });
+            let le_addr = builder.add(Insn::Le {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(le_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_le, "Le failed for {} <= {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_le,
+                "Le failed for {} <= {}",
+                a,
+                b
+            );
         }
 
         // Test Gt
@@ -1071,19 +1549,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let gt_addr = builder.add(Insn::Gt { lhs: r1, rhs: r2, target: 0 });
+            let gt_addr = builder.add(Insn::Gt {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(gt_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_gt, "Gt failed for {} > {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_gt,
+                "Gt failed for {} > {}",
+                a,
+                b
+            );
         }
 
         // Test Ge
@@ -1096,19 +1593,38 @@ fn test_all_comparisons() {
 
             builder.add(Insn::Integer { value: a, dest: r1 });
             builder.add(Insn::Integer { value: b, dest: r2 });
-            builder.add(Insn::Integer { value: 0, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 0,
+                dest: r_result,
+            });
 
-            let ge_addr = builder.add(Insn::Ge { lhs: r1, rhs: r2, target: 0 });
+            let ge_addr = builder.add(Insn::Ge {
+                lhs: r1,
+                rhs: r2,
+                target: 0,
+            });
             let skip = builder.add(Insn::Goto { target: 0 });
             builder.jump_here(ge_addr);
-            builder.add(Insn::Integer { value: 1, dest: r_result });
+            builder.add(Insn::Integer {
+                value: 1,
+                dest: r_result,
+            });
             builder.jump_here(skip);
-            builder.add(Insn::ResultRow { start: r_result, count: 1 });
+            builder.add(Insn::ResultRow {
+                start: r_result,
+                count: 1,
+            });
             builder.add(Insn::Halt);
 
             let mut program = builder.finish(1).expect("Failed to finish program");
             assert_eq!(program.step().unwrap(), StepResult::Row);
-            assert_eq!(program.column_int(0) != 0, expected_ge, "Ge failed for {} >= {}", a, b);
+            assert_eq!(
+                program.column_int(0) != 0,
+                expected_ge,
+                "Ge failed for {} >= {}",
+                a,
+                b
+            );
         }
     }
 
@@ -1136,32 +1652,65 @@ fn test_comparison_equal_values() {
     builder.add(Insn::Integer { value: 7, dest: r1 });
     builder.add(Insn::Integer { value: 7, dest: r2 });
 
-    builder.add(Insn::Integer { value: 0, dest: r_eq });
-    builder.add(Insn::Integer { value: 0, dest: r_le });
-    builder.add(Insn::Integer { value: 0, dest: r_ge });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_eq,
+    });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_le,
+    });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_ge,
+    });
 
     // 7 == 7 -> true
-    let eq_addr = builder.add(Insn::Eq { lhs: r1, rhs: r2, target: 0 });
+    let eq_addr = builder.add(Insn::Eq {
+        lhs: r1,
+        rhs: r2,
+        target: 0,
+    });
     let eq_skip = builder.add(Insn::Goto { target: 0 });
     builder.jump_here(eq_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_eq });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_eq,
+    });
     builder.jump_here(eq_skip);
 
     // 7 <= 7 -> true
-    let le_addr = builder.add(Insn::Le { lhs: r1, rhs: r2, target: 0 });
+    let le_addr = builder.add(Insn::Le {
+        lhs: r1,
+        rhs: r2,
+        target: 0,
+    });
     let le_skip = builder.add(Insn::Goto { target: 0 });
     builder.jump_here(le_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_le });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_le,
+    });
     builder.jump_here(le_skip);
 
     // 7 >= 7 -> true
-    let ge_addr = builder.add(Insn::Ge { lhs: r1, rhs: r2, target: 0 });
+    let ge_addr = builder.add(Insn::Ge {
+        lhs: r1,
+        rhs: r2,
+        target: 0,
+    });
     let ge_skip = builder.add(Insn::Goto { target: 0 });
     builder.jump_here(ge_addr);
-    builder.add(Insn::Integer { value: 1, dest: r_ge });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_ge,
+    });
     builder.jump_here(ge_skip);
 
-    builder.add(Insn::ResultRow { start: r_eq, count: 3 });
+    builder.add(Insn::ResultRow {
+        start: r_eq,
+        count: 3,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(3).expect("Failed to finish program");
@@ -1188,14 +1737,30 @@ fn test_copy_range() {
     let _r5 = builder.alloc_register();
     let _r6 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 10, dest: r1 });
-    builder.add(Insn::Integer { value: 20, dest: r2 });
-    builder.add(Insn::Integer { value: 30, dest: r3 });
+    builder.add(Insn::Integer {
+        value: 10,
+        dest: r1,
+    });
+    builder.add(Insn::Integer {
+        value: 20,
+        dest: r2,
+    });
+    builder.add(Insn::Integer {
+        value: 30,
+        dest: r3,
+    });
 
     // Copy 3 registers from r1 to r4
-    builder.add(Insn::Copy { src: r1, dest: r4, count: 3 });
+    builder.add(Insn::Copy {
+        src: r1,
+        dest: r4,
+        count: 3,
+    });
 
-    builder.add(Insn::ResultRow { start: r4, count: 3 });
+    builder.add(Insn::ResultRow {
+        start: r4,
+        count: 3,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(3).expect("Failed to finish program");
@@ -1214,11 +1779,21 @@ fn test_move_clears_source() {
     let r1 = builder.alloc_register();
     let r2 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::Move { src: r1, dest: r2, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::Move {
+        src: r1,
+        dest: r2,
+        count: 1,
+    });
 
     // After move, r1 should be NULL
-    builder.add(Insn::ResultRow { start: r1, count: 2 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 2,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(2).expect("Failed to finish program");
@@ -1235,9 +1810,18 @@ fn test_addimm() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 100, dest: r1 });
-    builder.add(Insn::AddImm { dest: r1, value: 50 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 100,
+        dest: r1,
+    });
+    builder.add(Insn::AddImm {
+        dest: r1,
+        value: 50,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1253,9 +1837,18 @@ fn test_addimm_negative() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 100, dest: r1 });
-    builder.add(Insn::AddImm { dest: r1, value: -30 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 100,
+        dest: r1,
+    });
+    builder.add(Insn::AddImm {
+        dest: r1,
+        value: -30,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1277,9 +1870,18 @@ fn test_real_values() {
     let r1 = builder.alloc_register();
     let r2 = builder.alloc_register();
 
-    builder.add(Insn::Real { value: 3.14159, dest: r1 });
-    builder.add(Insn::Real { value: -2.5, dest: r2 });
-    builder.add(Insn::ResultRow { start: r1, count: 2 });
+    builder.add(Insn::Real {
+        value: 3.14159,
+        dest: r1,
+    });
+    builder.add(Insn::Real {
+        value: -2.5,
+        dest: r2,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 2,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(2).expect("Failed to finish program");
@@ -1300,10 +1902,23 @@ fn test_real_arithmetic() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::Real { value: 10.5, dest: r1 });
-    builder.add(Insn::Real { value: 3.0, dest: r2 });
-    builder.add(Insn::Divide { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Real {
+        value: 10.5,
+        dest: r1,
+    });
+    builder.add(Insn::Real {
+        value: 3.0,
+        dest: r2,
+    });
+    builder.add(Insn::Divide {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1324,8 +1939,14 @@ fn test_string_values() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::String8 { value: "Hello, World!".to_string(), dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::String8 {
+        value: "Hello, World!".to_string(),
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1344,10 +1965,23 @@ fn test_string_concat() {
     let r2 = builder.alloc_register();
     let r3 = builder.alloc_register();
 
-    builder.add(Insn::String8 { value: "Hello, ".to_string(), dest: r1 });
-    builder.add(Insn::String8 { value: "World!".to_string(), dest: r2 });
-    builder.add(Insn::Concat { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::String8 {
+        value: "Hello, ".to_string(),
+        dest: r1,
+    });
+    builder.add(Insn::String8 {
+        value: "World!".to_string(),
+        dest: r2,
+    });
+    builder.add(Insn::Concat {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1364,8 +1998,14 @@ fn test_empty_string() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::String8 { value: "".to_string(), dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::String8 {
+        value: "".to_string(),
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1382,8 +2022,14 @@ fn test_string_with_special_chars() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::String8 { value: "Line1\nLine2\tTab".to_string(), dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::String8 {
+        value: "Line1\nLine2\tTab".to_string(),
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1400,8 +2046,14 @@ fn test_string_with_unicode() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::String8 { value: "Hello, 世界! 🎉".to_string(), dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::String8 {
+        value: "Hello, 世界! 🎉".to_string(),
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1424,16 +2076,33 @@ fn test_gosub_return() {
     let r_result = builder.alloc_register();
 
     // Main: Set result to 1, call subroutine, then set result to 3
-    builder.add(Insn::Integer { value: 1, dest: r_result });
-    let gosub_addr = builder.add(Insn::Gosub { return_reg: r_return, target: 0 });
-    builder.add(Insn::Integer { value: 3, dest: r_result });
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
+    let gosub_addr = builder.add(Insn::Gosub {
+        return_reg: r_return,
+        target: 0,
+    });
+    builder.add(Insn::Integer {
+        value: 3,
+        dest: r_result,
+    });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     // Subroutine: Set result to 2 and return
     builder.jump_here(gosub_addr);
-    builder.add(Insn::Integer { value: 2, dest: r_result });
-    builder.add(Insn::Return { return_reg: r_return });
+    builder.add(Insn::Integer {
+        value: 2,
+        dest: r_result,
+    });
+    builder.add(Insn::Return {
+        return_reg: r_return,
+    });
 
     let mut program = builder.finish(1).expect("Failed to finish program");
 
@@ -1460,7 +2129,10 @@ fn test_not_instruction() {
     builder.add(Insn::Integer { value: 1, dest: r2 }); // true
     builder.add(Insn::Not { src: r1, dest: r3 }); // NOT 0 = 1
     builder.add(Insn::Not { src: r2, dest: r4 }); // NOT 1 = 0
-    builder.add(Insn::ResultRow { start: r3, count: 2 });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 2,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(2).expect("Failed to finish program");
@@ -1483,11 +2155,20 @@ fn test_many_registers() {
     let first_reg = builder.alloc_register();
     for i in 1..10 {
         let _ = builder.alloc_register();
-        builder.add(Insn::Integer { value: i as i32, dest: first_reg + i });
+        builder.add(Insn::Integer {
+            value: i as i32,
+            dest: first_reg + i,
+        });
     }
-    builder.add(Insn::Integer { value: 0, dest: first_reg });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: first_reg,
+    });
 
-    builder.add(Insn::ResultRow { start: first_reg, count: 10 });
+    builder.add(Insn::ResultRow {
+        start: first_reg,
+        count: 10,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(10).expect("Failed to finish program");
@@ -1510,11 +2191,17 @@ fn test_noop_instruction() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::Noop);
     builder.add(Insn::Noop);
     builder.add(Insn::Noop);
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1567,28 +2254,52 @@ fn test_factorial_5() {
     let mut conn = Connection::open_in_memory().expect("Failed to open connection");
     let mut builder = conn.new_program().expect("Failed to create program");
 
-    let r_n = builder.alloc_register();      // Current n
+    let r_n = builder.alloc_register(); // Current n
     let r_result = builder.alloc_register(); // Accumulated result
-    let r_one = builder.alloc_register();    // Constant 1
+    let r_one = builder.alloc_register(); // Constant 1
 
     // Initialize: n = 5, result = 1, one = 1
-    builder.add(Insn::Integer { value: 5, dest: r_n });
-    builder.add(Insn::Integer { value: 1, dest: r_result });
-    builder.add(Insn::Integer { value: 1, dest: r_one });
+    builder.add(Insn::Integer {
+        value: 5,
+        dest: r_n,
+    });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_one,
+    });
 
     // Loop: while n > 1
     let loop_start = builder.current_addr();
 
     // result = result * n
-    builder.add(Insn::Multiply { lhs: r_result, rhs: r_n, dest: r_result });
+    builder.add(Insn::Multiply {
+        lhs: r_result,
+        rhs: r_n,
+        dest: r_result,
+    });
 
     // n = n - 1
-    builder.add(Insn::Subtract { lhs: r_n, rhs: r_one, dest: r_n });
+    builder.add(Insn::Subtract {
+        lhs: r_n,
+        rhs: r_one,
+        dest: r_n,
+    });
 
     // if n > 1, loop
-    builder.add(Insn::Gt { lhs: r_n, rhs: r_one, target: loop_start.raw() });
+    builder.add(Insn::Gt {
+        lhs: r_n,
+        rhs: r_one,
+        target: loop_start.raw(),
+    });
 
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1603,38 +2314,73 @@ fn test_fibonacci_sequence() {
     let mut conn = Connection::open_in_memory().expect("Failed to open connection");
     let mut builder = conn.new_program().expect("Failed to create program");
 
-    let r_a = builder.alloc_register();       // fib(n-2)
-    let r_b = builder.alloc_register();       // fib(n-1)
-    let r_next = builder.alloc_register();    // fib(n)
-    let r_count = builder.alloc_register();   // Counter
+    let r_a = builder.alloc_register(); // fib(n-2)
+    let r_b = builder.alloc_register(); // fib(n-1)
+    let r_next = builder.alloc_register(); // fib(n)
+    let r_count = builder.alloc_register(); // Counter
 
     // Initialize: a = 0, b = 1, count = 10
-    builder.add(Insn::Integer { value: 0, dest: r_a });
-    builder.add(Insn::Integer { value: 1, dest: r_b });
-    builder.add(Insn::Integer { value: 10, dest: r_count });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_a,
+    });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_b,
+    });
+    builder.add(Insn::Integer {
+        value: 10,
+        dest: r_count,
+    });
 
     // Output first number
-    builder.add(Insn::ResultRow { start: r_a, count: 1 });
-    builder.add(Insn::AddImm { dest: r_count, value: -1 });
+    builder.add(Insn::ResultRow {
+        start: r_a,
+        count: 1,
+    });
+    builder.add(Insn::AddImm {
+        dest: r_count,
+        value: -1,
+    });
 
     // Loop
     let loop_start = builder.current_addr();
 
     // Output b
-    builder.add(Insn::ResultRow { start: r_b, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_b,
+        count: 1,
+    });
 
     // next = a + b
-    builder.add(Insn::Add { lhs: r_a, rhs: r_b, dest: r_next });
+    builder.add(Insn::Add {
+        lhs: r_a,
+        rhs: r_b,
+        dest: r_next,
+    });
 
     // a = b
-    builder.add(Insn::SCopy { src: r_b, dest: r_a });
+    builder.add(Insn::SCopy {
+        src: r_b,
+        dest: r_a,
+    });
 
     // b = next
-    builder.add(Insn::SCopy { src: r_next, dest: r_b });
+    builder.add(Insn::SCopy {
+        src: r_next,
+        dest: r_b,
+    });
 
     // count--; if count > 0, loop
-    builder.add(Insn::AddImm { dest: r_count, value: -1 });
-    builder.add(Insn::IfPos { src: r_count, target: loop_start.raw(), decrement: 0 });
+    builder.add(Insn::AddImm {
+        dest: r_count,
+        value: -1,
+    });
+    builder.add(Insn::IfPos {
+        src: r_count,
+        target: loop_start.raw(),
+        decrement: 0,
+    });
 
     builder.add(Insn::Halt);
 
@@ -1706,23 +2452,46 @@ fn test_fuzz_arithmetic_programs() {
         // Random operation
         match rng.range(0, 5) {
             0 => {
-                builder.add(Insn::Add { lhs: r1, rhs: r2, dest: r3 });
+                builder.add(Insn::Add {
+                    lhs: r1,
+                    rhs: r2,
+                    dest: r3,
+                });
             }
             1 => {
-                builder.add(Insn::Subtract { lhs: r1, rhs: r2, dest: r3 });
+                builder.add(Insn::Subtract {
+                    lhs: r1,
+                    rhs: r2,
+                    dest: r3,
+                });
             }
             2 => {
-                builder.add(Insn::Multiply { lhs: r1, rhs: r2, dest: r3 });
+                builder.add(Insn::Multiply {
+                    lhs: r1,
+                    rhs: r2,
+                    dest: r3,
+                });
             }
             3 => {
-                builder.add(Insn::Divide { lhs: r1, rhs: r2, dest: r3 });
+                builder.add(Insn::Divide {
+                    lhs: r1,
+                    rhs: r2,
+                    dest: r3,
+                });
             }
             _ => {
-                builder.add(Insn::Remainder { lhs: r1, rhs: r2, dest: r3 });
+                builder.add(Insn::Remainder {
+                    lhs: r1,
+                    rhs: r2,
+                    dest: r3,
+                });
             }
         }
 
-        builder.add(Insn::ResultRow { start: r3, count: 1 });
+        builder.add(Insn::ResultRow {
+            start: r3,
+            count: 1,
+        });
         builder.add(Insn::Halt);
 
         let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1753,7 +2522,10 @@ fn test_fuzz_random_integer_values() {
         };
 
         builder.add(Insn::Integer { value, dest: r1 });
-        builder.add(Insn::ResultRow { start: r1, count: 1 });
+        builder.add(Insn::ResultRow {
+            start: r1,
+            count: 1,
+        });
         builder.add(Insn::Halt);
 
         let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1776,29 +2548,65 @@ fn test_fuzz_control_flow() {
 
         let value = rng.range(-100, 100);
         builder.add(Insn::Integer { value, dest: r1 });
-        builder.add(Insn::Integer { value: 0, dest: r_result });
+        builder.add(Insn::Integer {
+            value: 0,
+            dest: r_result,
+        });
 
         // Test random comparison
         let cmp_type = rng.range(0, 6);
         let cmp_value = rng.range(-100, 100);
         let r_cmp = builder.alloc_register();
-        builder.add(Insn::Integer { value: cmp_value, dest: r_cmp });
+        builder.add(Insn::Integer {
+            value: cmp_value,
+            dest: r_cmp,
+        });
 
         let jump_addr = match cmp_type {
-            0 => builder.add(Insn::Eq { lhs: r1, rhs: r_cmp, target: 0 }),
-            1 => builder.add(Insn::Ne { lhs: r1, rhs: r_cmp, target: 0 }),
-            2 => builder.add(Insn::Lt { lhs: r1, rhs: r_cmp, target: 0 }),
-            3 => builder.add(Insn::Le { lhs: r1, rhs: r_cmp, target: 0 }),
-            4 => builder.add(Insn::Gt { lhs: r1, rhs: r_cmp, target: 0 }),
-            _ => builder.add(Insn::Ge { lhs: r1, rhs: r_cmp, target: 0 }),
+            0 => builder.add(Insn::Eq {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
+            1 => builder.add(Insn::Ne {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
+            2 => builder.add(Insn::Lt {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
+            3 => builder.add(Insn::Le {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
+            4 => builder.add(Insn::Gt {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
+            _ => builder.add(Insn::Ge {
+                lhs: r1,
+                rhs: r_cmp,
+                target: 0,
+            }),
         };
 
         let skip_addr = builder.add(Insn::Goto { target: 0 });
         builder.jump_here(jump_addr);
-        builder.add(Insn::Integer { value: 1, dest: r_result });
+        builder.add(Insn::Integer {
+            value: 1,
+            dest: r_result,
+        });
         builder.jump_here(skip_addr);
 
-        builder.add(Insn::ResultRow { start: r_result, count: 1 });
+        builder.add(Insn::ResultRow {
+            start: r_result,
+            count: 1,
+        });
         builder.add(Insn::Halt);
 
         let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1809,12 +2617,48 @@ fn test_fuzz_control_flow() {
         assert_eq!(result.unwrap(), StepResult::Row);
 
         let expected = match cmp_type {
-            0 => if value == cmp_value { 1 } else { 0 },
-            1 => if value != cmp_value { 1 } else { 0 },
-            2 => if value < cmp_value { 1 } else { 0 },
-            3 => if value <= cmp_value { 1 } else { 0 },
-            4 => if value > cmp_value { 1 } else { 0 },
-            _ => if value >= cmp_value { 1 } else { 0 },
+            0 => {
+                if value == cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
+            1 => {
+                if value != cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
+            2 => {
+                if value < cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
+            3 => {
+                if value <= cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
+            4 => {
+                if value > cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
+            _ => {
+                if value >= cmp_value {
+                    1
+                } else {
+                    0
+                }
+            }
         };
 
         assert_eq!(program.column_int(0), expected);
@@ -1836,7 +2680,10 @@ fn test_fuzz_long_programs() {
 
         // Initialize registers with random values
         for (i, &r) in regs.iter().enumerate() {
-            builder.add(Insn::Integer { value: (i * 10) as i32, dest: r });
+            builder.add(Insn::Integer {
+                value: (i * 10) as i32,
+                dest: r,
+            });
         }
 
         // Add random arithmetic operations
@@ -1847,15 +2694,30 @@ fn test_fuzz_long_programs() {
             let dest = regs[rng.range(0, num_regs as i32) as usize];
 
             match rng.range(0, 4) {
-                0 => builder.add(Insn::Add { lhs: src1, rhs: src2, dest }),
-                1 => builder.add(Insn::Subtract { lhs: src1, rhs: src2, dest }),
-                2 => builder.add(Insn::Multiply { lhs: src1, rhs: src2, dest }),
+                0 => builder.add(Insn::Add {
+                    lhs: src1,
+                    rhs: src2,
+                    dest,
+                }),
+                1 => builder.add(Insn::Subtract {
+                    lhs: src1,
+                    rhs: src2,
+                    dest,
+                }),
+                2 => builder.add(Insn::Multiply {
+                    lhs: src1,
+                    rhs: src2,
+                    dest,
+                }),
                 _ => builder.add(Insn::SCopy { src: src1, dest }),
             };
         }
 
         // Output first register
-        builder.add(Insn::ResultRow { start: regs[0], count: 1 });
+        builder.add(Insn::ResultRow {
+            start: regs[0],
+            count: 1,
+        });
         builder.add(Insn::Halt);
 
         let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1881,15 +2743,30 @@ fn test_fuzz_nested_loops() {
 
         let limit = rng.range(2, 10);
 
-        builder.add(Insn::Integer { value: limit, dest: r_counter });
-        builder.add(Insn::Integer { value: 0, dest: r_sum });
+        builder.add(Insn::Integer {
+            value: limit,
+            dest: r_counter,
+        });
+        builder.add(Insn::Integer {
+            value: 0,
+            dest: r_sum,
+        });
 
         // Loop using IfNotZero (decrement and jump if was not zero)
         let loop_start = builder.current_addr();
-        builder.add(Insn::AddImm { dest: r_sum, value: 1 });
-        builder.add(Insn::IfNotZero { src: r_counter, target: loop_start.raw() });
+        builder.add(Insn::AddImm {
+            dest: r_sum,
+            value: 1,
+        });
+        builder.add(Insn::IfNotZero {
+            src: r_counter,
+            target: loop_start.raw(),
+        });
 
-        builder.add(Insn::ResultRow { start: r_sum, count: 1 });
+        builder.add(Insn::ResultRow {
+            start: r_sum,
+            count: 1,
+        });
         builder.add(Insn::Halt);
 
         let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1914,13 +2791,29 @@ fn test_many_result_rows() {
     let r_limit = builder.alloc_register();
 
     let num_rows = 1000;
-    builder.add(Insn::Integer { value: 0, dest: r_counter });
-    builder.add(Insn::Integer { value: num_rows, dest: r_limit });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_counter,
+    });
+    builder.add(Insn::Integer {
+        value: num_rows,
+        dest: r_limit,
+    });
 
     let loop_start = builder.current_addr();
-    builder.add(Insn::ResultRow { start: r_counter, count: 1 });
-    builder.add(Insn::AddImm { dest: r_counter, value: 1 });
-    builder.add(Insn::Lt { lhs: r_counter, rhs: r_limit, target: loop_start.raw() });
+    builder.add(Insn::ResultRow {
+        start: r_counter,
+        count: 1,
+    });
+    builder.add(Insn::AddImm {
+        dest: r_counter,
+        value: 1,
+    });
+    builder.add(Insn::Lt {
+        lhs: r_counter,
+        rhs: r_limit,
+        target: loop_start.raw(),
+    });
 
     builder.add(Insn::Halt);
 
@@ -1947,8 +2840,14 @@ fn test_program_reuse_many_times() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -1985,8 +2884,14 @@ fn test_result_row_zero_columns() {
 
     let r1 = builder.alloc_register();
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 0 }); // Zero columns
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 0,
+    }); // Zero columns
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(0).expect("Failed to finish program");
@@ -2009,7 +2914,10 @@ fn test_many_consecutive_jumps() {
     let mut addrs = Vec::new();
     for _ in 0..10 {
         addrs.push(builder.add(Insn::Goto { target: 0 }));
-        builder.add(Insn::AddImm { dest: r1, value: 100 }); // Should be skipped
+        builder.add(Insn::AddImm {
+            dest: r1,
+            value: 100,
+        }); // Should be skipped
     }
 
     // Patch all jumps to final destination
@@ -2017,8 +2925,14 @@ fn test_many_consecutive_jumps() {
         builder.jump_here(addr);
     }
 
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -2039,10 +2953,17 @@ fn test_self_referential_computation() {
 
     // Double 5 times: 1 -> 2 -> 4 -> 8 -> 16 -> 32
     for _ in 0..5 {
-        builder.add(Insn::Add { lhs: r1, rhs: r1, dest: r1 });
+        builder.add(Insn::Add {
+            lhs: r1,
+            rhs: r1,
+            dest: r1,
+        });
     }
 
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");

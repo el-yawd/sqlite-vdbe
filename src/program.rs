@@ -172,12 +172,7 @@ impl ProgramBuilder {
                     let ptr = ffi::sqlite3_malloc(std::mem::size_of::<i64>() as i32);
                     if !ptr.is_null() {
                         *(ptr as *mut i64) = i;
-                        ffi::sqlite3VdbeChangeP4(
-                            self.raw,
-                            addr,
-                            ptr as *const i8,
-                            ffi::P4_INT64,
-                        );
+                        ffi::sqlite3VdbeChangeP4(self.raw, addr, ptr as *const i8, ffi::P4_INT64);
                     }
                     addr
                 },
@@ -188,12 +183,7 @@ impl ProgramBuilder {
                     let ptr = ffi::sqlite3_malloc(std::mem::size_of::<f64>() as i32);
                     if !ptr.is_null() {
                         *(ptr as *mut f64) = r;
-                        ffi::sqlite3VdbeChangeP4(
-                            self.raw,
-                            addr,
-                            ptr as *const i8,
-                            ffi::P4_REAL,
-                        );
+                        ffi::sqlite3VdbeChangeP4(self.raw, addr, ptr as *const i8, ffi::P4_REAL);
                     }
                     addr
                 },
@@ -481,9 +471,7 @@ impl Program {
                     if err.is_null() {
                         String::new()
                     } else {
-                        std::ffi::CStr::from_ptr(err)
-                            .to_string_lossy()
-                            .into_owned()
+                        std::ffi::CStr::from_ptr(err).to_string_lossy().into_owned()
                     }
                 };
                 Err(Error::from_code_with_message(rc, msg))
@@ -560,16 +548,14 @@ impl Program {
         match col_type {
             ffi::SQLITE_INTEGER => Value::Integer(self.column_int64(idx)),
             ffi::SQLITE_FLOAT => Value::Real(self.column_double(idx)),
-            ffi::SQLITE_TEXT => {
-                self.column_text(idx)
-                    .map(|s| Value::Text(s.to_string()))
-                    .unwrap_or(Value::Null)
-            }
-            ffi::SQLITE_BLOB => {
-                self.column_blob(idx)
-                    .map(|b| Value::Blob(b.to_vec()))
-                    .unwrap_or(Value::Null)
-            }
+            ffi::SQLITE_TEXT => self
+                .column_text(idx)
+                .map(|s| Value::Text(s.to_string()))
+                .unwrap_or(Value::Null),
+            ffi::SQLITE_BLOB => self
+                .column_blob(idx)
+                .map(|b| Value::Blob(b.to_vec()))
+                .unwrap_or(Value::Null),
             ffi::SQLITE_NULL | _ => Value::Null,
         }
     }

@@ -30,7 +30,6 @@
 //! # Ok::<(), sqlite_vdbe::Error>(())
 //! ```
 
-
 /// Raw opcode values from SQLite's opcodes.h
 ///
 /// These are the numeric values that map to SQLite's internal opcodes.
@@ -250,7 +249,6 @@ pub enum Insn {
     // =========================================================================
     // Constants - Load values into registers
     // =========================================================================
-
     /// The 32-bit integer value P1 is written into register P2.
     Integer {
         /// The integer value to store
@@ -306,7 +304,6 @@ pub enum Insn {
     // =========================================================================
     // Arithmetic - Binary operations on registers
     // =========================================================================
-
     /// Add the value in register P1 to the value in register P2 and store the
     /// result in register P3. If either input is NULL, the result is NULL.
     Add {
@@ -386,40 +383,23 @@ pub enum Insn {
     // =========================================================================
     // Bitwise Operations
     // =========================================================================
-
     /// Take the bit-wise AND of the values in register P1 and P2 and store the
     /// result in register P3. If either input is NULL, the result is NULL.
-    BitAnd {
-        lhs: i32,
-        rhs: i32,
-        dest: i32,
-    },
+    BitAnd { lhs: i32, rhs: i32, dest: i32 },
 
     /// Take the bit-wise OR of the values in register P1 and P2 and store the
     /// result in register P3. If either input is NULL, the result is NULL.
-    BitOr {
-        lhs: i32,
-        rhs: i32,
-        dest: i32,
-    },
+    BitOr { lhs: i32, rhs: i32, dest: i32 },
 
     /// Shift the integer value in register P2 to the left by the number of bits
     /// specified by the integer in register P1. Store the result in register
     /// P3. If either input is NULL, the result is NULL.
-    ShiftLeft {
-        lhs: i32,
-        rhs: i32,
-        dest: i32,
-    },
+    ShiftLeft { lhs: i32, rhs: i32, dest: i32 },
 
     /// Shift the integer value in register P2 to the right by the number of
     /// bits specified by the integer in register P1. Store the result in
     /// register P3. If either input is NULL, the result is NULL.
-    ShiftRight {
-        lhs: i32,
-        rhs: i32,
-        dest: i32,
-    },
+    ShiftRight { lhs: i32, rhs: i32, dest: i32 },
 
     /// Interpret the content of register P1 as an integer. Store the
     /// ones-complement of the P1 value into register P2. If P1 holds a NULL
@@ -434,7 +414,6 @@ pub enum Insn {
     // =========================================================================
     // Logical Operations
     // =========================================================================
-
     /// Interpret the value in register P1 as a boolean value. Store the boolean
     /// complement in register P2. If the value in register P1 is NULL, then a
     /// NULL is stored in P2.
@@ -459,7 +438,6 @@ pub enum Insn {
     // =========================================================================
     // Register Operations - Copy and move values
     // =========================================================================
-
     /// Make a copy of registers P1..P1+P3 into registers P2..P2+P3.
     ///
     /// If the 0x0002 bit of P5 is set then also clear the MEM_Subtype flag in
@@ -520,7 +498,6 @@ pub enum Insn {
     // =========================================================================
     // Control Flow
     // =========================================================================
-
     /// Exit immediately. All open cursors, etc are closed automatically.
     ///
     /// P1 is the result code returned by sqlite3_exec(), sqlite3_reset(), or
@@ -724,7 +701,6 @@ pub enum Insn {
     // =========================================================================
     // Comparison Operations - Compare and branch
     // =========================================================================
-
     /// Compare the values in register P1 and P3. If reg(P3)==reg(P1) then jump
     /// to address P2.
     ///
@@ -848,7 +824,6 @@ pub enum Insn {
     // =========================================================================
     // Register Tests
     // =========================================================================
-
     /// Register P1 must contain an integer. If the value of register P1 is 1 or
     /// greater, subtract P3 from the value in P1 and jump to P2.
     ///
@@ -897,7 +872,6 @@ pub enum Insn {
     // =========================================================================
     // Result Output
     // =========================================================================
-
     /// The registers P1 through P1+P2-1 contain a single row of results. This
     /// opcode causes the sqlite3_step() call to terminate with an SQLITE_ROW
     /// return code and it sets up the sqlite3_stmt structure to provide access
@@ -912,7 +886,6 @@ pub enum Insn {
     // =========================================================================
     // Cursor Operations - Database access
     // =========================================================================
-
     /// Open a read-only cursor for the database table whose root page is P2 in
     /// a database file. The database file is determined by P3. P3==0 means the
     /// main database, P3==1 means the database used for temporary tables, and
@@ -1415,7 +1388,6 @@ pub enum Insn {
     // =========================================================================
     // Index Operations
     // =========================================================================
-
     /// Register P2 holds an SQL index key made using the MakeRecord
     /// instructions. This opcode writes that key into the index P1. Data for
     /// the entry is nil.
@@ -1482,7 +1454,6 @@ pub enum Insn {
     // =========================================================================
     // Program Initialization
     // =========================================================================
-
     /// Programs contain a single instance of this opcode as the very first
     /// opcode.
     ///
@@ -1505,7 +1476,6 @@ pub enum Insn {
     // =========================================================================
     // Coroutines
     // =========================================================================
-
     /// Set up register P1 so that it will Yield to the coroutine located at
     /// address P3.
     ///
@@ -1550,7 +1520,6 @@ pub enum Insn {
     // =========================================================================
     // Aggregation
     // =========================================================================
-
     /// Execute the xStep function for an aggregate. The function has P5
     /// arguments. P4 is a pointer to the FuncDef structure that specifies the
     /// function. Register P3 is the accumulator.
@@ -1586,7 +1555,6 @@ pub enum Insn {
     // =========================================================================
     // Miscellaneous
     // =========================================================================
-
     /// Do nothing. Continue downward to the next opcode.
     Noop,
 
@@ -1614,7 +1582,6 @@ pub enum Insn {
     // =========================================================================
     // Raw Opcode - For opcodes not yet wrapped
     // =========================================================================
-
     /// Raw opcode for advanced use
     ///
     /// Use this for opcodes that don't have a dedicated variant yet.
@@ -1754,7 +1721,7 @@ impl Insn {
             // Bitwise - Note: SQLite computes P2 op P1
             Insn::BitAnd { lhs, rhs, dest } => (*lhs, *rhs, *dest, 0),
             Insn::BitOr { lhs, rhs, dest } => (*lhs, *rhs, *dest, 0),
-            Insn::ShiftLeft { lhs, rhs, dest } => (*rhs, *lhs, *dest, 0),  // P2 << P1
+            Insn::ShiftLeft { lhs, rhs, dest } => (*rhs, *lhs, *dest, 0), // P2 << P1
             Insn::ShiftRight { lhs, rhs, dest } => (*rhs, *lhs, *dest, 0), // P2 >> P1
             Insn::BitNot { src, dest } => (*src, *dest, 0, 0),
 
@@ -1770,13 +1737,28 @@ impl Insn {
 
             // Control flow
             Insn::Halt => (0, 0, 0, 0),
-            Insn::HaltWithError { error_code, on_error } => (*error_code, *on_error, 0, 0),
-            Insn::HaltIfNull { src, error_code, target } => (*src, *target, *error_code, 0),
+            Insn::HaltWithError {
+                error_code,
+                on_error,
+            } => (*error_code, *on_error, 0, 0),
+            Insn::HaltIfNull {
+                src,
+                error_code,
+                target,
+            } => (*src, *target, *error_code, 0),
             Insn::Goto { target } => (0, *target, 0, 0),
             Insn::Gosub { return_reg, target } => (*return_reg, *target, 0, 0),
             Insn::Return { return_reg } => (*return_reg, 0, 0, 0),
-            Insn::If { src, target, jump_if_null } => (*src, *target, if *jump_if_null { 1 } else { 0 }, 0),
-            Insn::IfNot { src, target, jump_if_null } => (*src, *target, if *jump_if_null { 1 } else { 0 }, 0),
+            Insn::If {
+                src,
+                target,
+                jump_if_null,
+            } => (*src, *target, if *jump_if_null { 1 } else { 0 }, 0),
+            Insn::IfNot {
+                src,
+                target,
+                jump_if_null,
+            } => (*src, *target, if *jump_if_null { 1 } else { 0 }, 0),
             Insn::IsNull { src, target } => (*src, *target, 0, 0),
             Insn::NotNull { src, target } => (*src, *target, 0, 0),
             Insn::Once { target } => (0, *target, 0, 0),
@@ -1792,7 +1774,11 @@ impl Insn {
             Insn::Ge { lhs, rhs, target } => (*rhs, *target, *lhs, 0),
 
             // Register tests
-            Insn::IfPos { src, target, decrement } => (*src, *target, *decrement, 0),
+            Insn::IfPos {
+                src,
+                target,
+                decrement,
+            } => (*src, *target, *decrement, 0),
             Insn::IfNotZero { src, target } => (*src, *target, 0, 0),
             Insn::DecrJumpZero { src, target } => (*src, *target, 0, 0),
             Insn::MustBeInt { src, target } => (*src, *target, 0, 0),
@@ -1801,41 +1787,101 @@ impl Insn {
             Insn::ResultRow { start, count } => (*start, *count, 0, 0),
 
             // Cursor operations
-            Insn::OpenRead { cursor, root_page, db_num } => (*cursor, *root_page, *db_num, 0),
-            Insn::OpenWrite { cursor, root_page, db_num } => (*cursor, *root_page, *db_num, 0),
-            Insn::OpenEphemeral { cursor, num_columns } => (*cursor, *num_columns, 0, 0),
+            Insn::OpenRead {
+                cursor,
+                root_page,
+                db_num,
+            } => (*cursor, *root_page, *db_num, 0),
+            Insn::OpenWrite {
+                cursor,
+                root_page,
+                db_num,
+            } => (*cursor, *root_page, *db_num, 0),
+            Insn::OpenEphemeral {
+                cursor,
+                num_columns,
+            } => (*cursor, *num_columns, 0, 0),
             Insn::Close { cursor } => (*cursor, 0, 0, 0),
             Insn::Rewind { cursor, target } => (*cursor, *target, 0, 0),
             Insn::Next { cursor, target } => (*cursor, *target, 0, 0),
             Insn::Prev { cursor, target } => (*cursor, *target, 0, 0),
             Insn::Last { cursor, target } => (*cursor, *target, 0, 0),
-            Insn::SeekGE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::SeekGT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::SeekLE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::SeekLT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::SeekRowid { cursor, target, rowid } => (*cursor, *target, *rowid, 0),
-            Insn::Column { cursor, column, dest } => (*cursor, *column, *dest, 0),
+            Insn::SeekGE {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::SeekGT {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::SeekLE {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::SeekLT {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::SeekRowid {
+                cursor,
+                target,
+                rowid,
+            } => (*cursor, *target, *rowid, 0),
+            Insn::Column {
+                cursor,
+                column,
+                dest,
+            } => (*cursor, *column, *dest, 0),
             Insn::Rowid { cursor, dest } => (*cursor, *dest, 0, 0),
-            Insn::NewRowid { cursor, dest, prev_rowid } => (*cursor, *dest, *prev_rowid, 0),
-            Insn::Insert { cursor, data, rowid } => (*cursor, *data, *rowid, 0),
+            Insn::NewRowid {
+                cursor,
+                dest,
+                prev_rowid,
+            } => (*cursor, *dest, *prev_rowid, 0),
+            Insn::Insert {
+                cursor,
+                data,
+                rowid,
+            } => (*cursor, *data, *rowid, 0),
             Insn::Delete { cursor } => (*cursor, 0, 0, 0),
             Insn::MakeRecord { start, count, dest } => (*start, *count, *dest, 0),
 
             // Index operations
             Insn::IdxInsert { cursor, key } => (*cursor, *key, 0, 0),
-            Insn::IdxDelete { cursor, key, num_fields } => (*cursor, *key, *num_fields, 0),
+            Insn::IdxDelete {
+                cursor,
+                key,
+                num_fields,
+            } => (*cursor, *key, *num_fields, 0),
             Insn::IdxRowid { cursor, dest } => (*cursor, *dest, 0, 0),
 
             // Init
             Insn::Init { target } => (0, *target, 0, 0),
 
             // Coroutines
-            Insn::InitCoroutine { coroutine, target, end } => (*coroutine, *target, *end, 0),
+            Insn::InitCoroutine {
+                coroutine,
+                target,
+                end,
+            } => (*coroutine, *target, *end, 0),
             Insn::Yield { coroutine } => (*coroutine, 0, 0, 0),
             Insn::EndCoroutine { coroutine } => (*coroutine, 0, 0, 0),
 
             // Aggregation
-            Insn::AggStep { args, accum, num_args, .. } => (*args, 0, *accum, *num_args as u16),
+            Insn::AggStep {
+                args,
+                accum,
+                num_args,
+                ..
+            } => (*args, 0, *accum, *num_args as u16),
             Insn::AggFinal { accum, num_args } => (*accum, *num_args, 0, 0),
 
             // Misc
@@ -1854,7 +1900,9 @@ impl Insn {
             Insn::Real { value, .. } => Some(InsnP4::Real(*value)),
             Insn::String8 { value, .. } => Some(InsnP4::String(value.clone())),
             Insn::Raw { p4: P4::Int(i), .. } => Some(InsnP4::Int(*i)),
-            Insn::Raw { p4: P4::String(s), .. } => Some(InsnP4::String(s.clone())),
+            Insn::Raw {
+                p4: P4::String(s), ..
+            } => Some(InsnP4::String(s.clone())),
             _ => None,
         }
     }
@@ -1950,7 +1998,6 @@ pub(crate) enum InsnP4 {
     String(String),
 }
 
-
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name())
@@ -1975,11 +2022,19 @@ mod tests {
         let insn = Insn::Integer { value: 42, dest: 1 };
         assert_eq!(insn.operands(), (42, 1, 0, 0));
 
-        let insn = Insn::Add { lhs: 1, rhs: 2, dest: 3 };
+        let insn = Insn::Add {
+            lhs: 1,
+            rhs: 2,
+            dest: 3,
+        };
         assert_eq!(insn.operands(), (1, 2, 3, 0));
 
         // Test that Subtract swaps operands
-        let insn = Insn::Subtract { lhs: 1, rhs: 2, dest: 3 };
+        let insn = Insn::Subtract {
+            lhs: 1,
+            rhs: 2,
+            dest: 3,
+        };
         assert_eq!(insn.operands(), (2, 1, 3, 0)); // P2-P1, so swap
     }
 

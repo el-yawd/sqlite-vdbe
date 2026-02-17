@@ -1,8 +1,7 @@
 //! Value types for VDBE registers and results
 
 /// A SQLite value that can be stored in a VDBE register or returned as a result
-#[derive(Debug, Clone, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Value {
     /// NULL value
     #[default]
@@ -109,7 +108,6 @@ impl Value {
         }
     }
 }
-
 
 // Conversion from primitive types
 impl From<i64> for Value {

@@ -9,10 +9,7 @@ use crate::ffi;
 #[derive(Debug)]
 pub enum Error {
     /// SQLite returned an error code
-    Sqlite {
-        code: i32,
-        message: Option<String>,
-    },
+    Sqlite { code: i32, message: Option<String> },
     /// Invalid path (non-UTF8 or contains null byte)
     InvalidPath,
     /// String conversion failed (contains null byte)
@@ -25,15 +22,9 @@ pub enum Error {
         actual: &'static str,
     },
     /// Register index out of bounds
-    RegisterOutOfBounds {
-        index: i32,
-        max: i32,
-    },
+    RegisterOutOfBounds { index: i32, max: i32 },
     /// Cursor index out of bounds
-    CursorOutOfBounds {
-        index: i32,
-        max: i32,
-    },
+    CursorOutOfBounds { index: i32, max: i32 },
     /// Invalid opcode
     InvalidOpcode(u8),
 }
