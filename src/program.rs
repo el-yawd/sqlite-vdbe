@@ -556,7 +556,8 @@ impl Program {
                 .column_blob(idx)
                 .map(|b| Value::Blob(b.to_vec()))
                 .unwrap_or(Value::Null),
-            ffi::SQLITE_NULL | _ => Value::Null,
+            ffi::SQLITE_NULL => Value::Null,
+            _ => Value::Null,
         }
     }
 

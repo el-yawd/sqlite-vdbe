@@ -1369,13 +1369,13 @@ pub enum Insn {
     /// The meaning of P5 depends on whether or not the SQLITE_ENABLE_NULL_TRIM
     /// compile-time option is enabled:
     ///
-    /// * If SQLITE_ENABLE_NULL_TRIM is enabled, then the P5 is the index of the
-    /// right-most table that can be null-trimmed.
+    /// - If SQLITE_ENABLE_NULL_TRIM is enabled, then the P5 is the index of the
+    ///   right-most table that can be null-trimmed.
     ///
-    /// * If SQLITE_ENABLE_NULL_TRIM is omitted, then P5 has the value
-    /// OPFLAG_NOCHNG_MAGIC if the MakeRecord opcode is allowed to accept
-    /// no-change records with serial_type 10. This value is only used inside an
-    /// assert() and does not affect the end result.
+    /// - If SQLITE_ENABLE_NULL_TRIM is omitted, then P5 has the value
+    ///   OPFLAG_NOCHNG_MAGIC if the MakeRecord opcode is allowed to accept
+    ///   no-change records with serial_type 10. This value is only used inside an
+    ///   assert() and does not affect the end result.
     MakeRecord {
         /// First register of data
         start: i32,
