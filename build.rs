@@ -1,38 +1,29 @@
 use std::env;
 use std::fs;
-use std::io::{self, Read};
 use std::path::PathBuf;
-
-const SQLITE_VERSION: &str = "3450000";
-const SQLITE_YEAR: &str = "2024";
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    // vdbe_rust.c is bundled with the crate
+    // Bundled SQLite amalgamation
+    let sqlite_dir = manifest_dir.join("c").join("sqlite");
+    let sqlite_c = sqlite_dir.join("sqlite3.c");
+    let sqlite_h = sqlite_dir.join("sqlite3.h");
+
+    // vdbe_rust.c helpers
     let vdbe_rust_c = manifest_dir.join("c").join("vdbe_rust.c");
+
+    // Track source files for rebuild
+    println!("cargo:rerun-if-changed={}", sqlite_c.display());
+    println!("cargo:rerun-if-changed={}", sqlite_h.display());
     println!("cargo:rerun-if-changed={}", vdbe_rust_c.display());
 
     #[cfg(feature = "bundled")]
     {
-        // Download or use cached amalgamation
-        let amalgamation_dir = out_dir.join("sqlite");
-        let amalgamation = amalgamation_dir.join("sqlite3.c");
-        let amalgamation_header = amalgamation_dir.join("sqlite3.h");
-
-        if !amalgamation.exists() || !amalgamation_header.exists() {
-            download_amalgamation(&amalgamation_dir)
-                .expect("Failed to download SQLite amalgamation");
-        }
-
-        println!("cargo:rerun-if-changed={}", amalgamation.display());
-        println!("cargo:rerun-if-changed={}", amalgamation_header.display());
-
         // Create combined source: amalgamation + vdbe_rust.c
         let combined_source = out_dir.join("sqlite3_combined.c");
-        let amalgamation_content =
-            fs::read_to_string(&amalgamation).expect("Failed to read sqlite3.c");
+        let sqlite_content = fs::read_to_string(&sqlite_c).expect("Failed to read sqlite3.c");
         let vdbe_rust_content =
             fs::read_to_string(&vdbe_rust_c).expect("Failed to read vdbe_rust.c");
 
@@ -43,7 +34,7 @@ fn main() {
             // ---- vdbe_rust.c ----\n\
             #define VDBE_RUST_AMALGAMATION 1\n\
             {}\n",
-            amalgamation_content, vdbe_rust_content
+            sqlite_content, vdbe_rust_content
         );
         fs::write(&combined_source, combined).expect("Failed to write combined source");
 
@@ -51,7 +42,7 @@ fn main() {
 
         build
             .file(&combined_source)
-            .include(&amalgamation_dir)
+            .include(&sqlite_dir)
             // Make internal functions externally visible
             .define("SQLITE_PRIVATE", Some(""))
             // Standard SQLite options
@@ -69,69 +60,5 @@ fn main() {
         }
 
         build.compile("sqlite3");
-    }
-}
-
-#[cfg(feature = "bundled")]
-fn download_amalgamation(dest_dir: &PathBuf) -> io::Result<()> {
-    use std::io::Cursor;
-
-    fs::create_dir_all(dest_dir)?;
-
-    let url = format!(
-        "https://sqlite.org/{}/sqlite-amalgamation-{}.zip",
-        SQLITE_YEAR, SQLITE_VERSION
-    );
-
-    eprintln!("Downloading SQLite amalgamation from {}...", url);
-
-    // Use ureq for simple HTTP requests (or fall back to curl)
-    let zip_data = download_url(&url)?;
-
-    // Extract the zip
-    let cursor = Cursor::new(zip_data);
-    let mut archive = zip::ZipArchive::new(cursor).map_err(io::Error::other)?;
-
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i).map_err(io::Error::other)?;
-
-        let name = file.name().to_string();
-        if name.ends_with("sqlite3.c") || name.ends_with("sqlite3.h") {
-            let filename = PathBuf::from(&name).file_name().unwrap().to_os_string();
-            let dest_path = dest_dir.join(filename);
-
-            let mut content = Vec::new();
-            file.read_to_end(&mut content)?;
-            fs::write(&dest_path, content)?;
-            eprintln!("  Extracted: {}", dest_path.display());
-        }
-    }
-
-    Ok(())
-}
-
-#[cfg(feature = "bundled")]
-fn download_url(url: &str) -> io::Result<Vec<u8>> {
-    // Try using curl command (most portable)
-    let output = std::process::Command::new("curl")
-        .args(["-fsSL", url])
-        .output();
-
-    match output {
-        Ok(output) if output.status.success() => Ok(output.stdout),
-        _ => {
-            // Try wget as fallback
-            let output = std::process::Command::new("wget")
-                .args(["-qO-", url])
-                .output();
-
-            match output {
-                Ok(output) if output.status.success() => Ok(output.stdout),
-                _ => Err(io::Error::other(
-                    "Failed to download SQLite. Please install curl or wget, \
-                     or manually download the amalgamation from https://sqlite.org/download.html",
-                )),
-            }
-        }
     }
 }
