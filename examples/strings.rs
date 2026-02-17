@@ -29,7 +29,10 @@ fn main() -> sqlite_vdbe::Result<()> {
     });
 
     // Output result
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     // Execute

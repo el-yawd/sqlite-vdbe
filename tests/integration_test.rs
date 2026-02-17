@@ -2982,7 +2982,7 @@ fn test_self_referential_computation() {
 /// P2 is the amount to add (can be negative)
 #[test]
 fn test_fk_counter_opcode() {
-    use sqlite_vdbe::{Insn, RawOpcode, P4};
+    use sqlite_vdbe::{Insn, P4, RawOpcode};
 
     let mut conn = Connection::open_in_memory().expect("Failed to open connection");
     let mut builder = conn.new_program().expect("Failed to create program");
@@ -2993,8 +2993,8 @@ fn test_fk_counter_opcode() {
     // This is an internal opcode that modifies SQLite's constraint tracking
     builder.add(Insn::Raw {
         opcode: RawOpcode::FkCounter,
-        p1: 0,  // statement counter
-        p2: 5,  // increment by 5
+        p1: 0, // statement counter
+        p2: 5, // increment by 5
         p3: 0,
         p4: P4::None,
         p5: 0,
@@ -3011,8 +3011,14 @@ fn test_fk_counter_opcode() {
     });
 
     // Output a result to verify program executed
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3025,7 +3031,7 @@ fn test_fk_counter_opcode() {
 /// Combined with FkCounter to test the counter logic
 #[test]
 fn test_fk_if_zero_opcode() {
-    use sqlite_vdbe::{Insn, RawOpcode, P4};
+    use sqlite_vdbe::{Insn, P4, RawOpcode};
 
     let mut conn = Connection::open_in_memory().expect("Failed to open connection");
     let mut builder = conn.new_program().expect("Failed to create program");
@@ -3033,26 +3039,38 @@ fn test_fk_if_zero_opcode() {
     let r_result = builder.alloc_register();
 
     // Initialize result to 0
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
     // Statement counter starts at 0, so FkIfZero should jump
     let fk_check = builder.add(Insn::Raw {
         opcode: RawOpcode::FkIfZero,
-        p1: 0,  // check statement counter
-        p2: 0,  // jump target (will be patched)
+        p1: 0, // check statement counter
+        p2: 0, // jump target (will be patched)
         p3: 0,
         p4: P4::None,
         p5: 0,
     });
 
     // This should be skipped (counter is 0)
-    builder.add(Insn::Integer { value: 99, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 99,
+        dest: r_result,
+    });
 
     // Jump lands here
     builder.jump_here(fk_check);
-    builder.add(Insn::Integer { value: 1, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_result,
+    });
 
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3078,8 +3096,15 @@ fn test_and_opcode() {
     // Test 1 AND 1 = 1
     builder.add(Insn::Integer { value: 1, dest: r1 });
     builder.add(Insn::Integer { value: 1, dest: r2 });
-    builder.add(Insn::And { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::And {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3099,8 +3124,15 @@ fn test_and_false_result() {
     // Test 1 AND 0 = 0
     builder.add(Insn::Integer { value: 1, dest: r1 });
     builder.add(Insn::Integer { value: 0, dest: r2 });
-    builder.add(Insn::And { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::And {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3120,8 +3152,15 @@ fn test_or_opcode() {
     // Test 0 OR 1 = 1
     builder.add(Insn::Integer { value: 0, dest: r1 });
     builder.add(Insn::Integer { value: 1, dest: r2 });
-    builder.add(Insn::Or { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Or {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3141,8 +3180,15 @@ fn test_or_both_false() {
     // Test 0 OR 0 = 0
     builder.add(Insn::Integer { value: 0, dest: r1 });
     builder.add(Insn::Integer { value: 0, dest: r2 });
-    builder.add(Insn::Or { lhs: r1, rhs: r2, dest: r3 });
-    builder.add(Insn::ResultRow { start: r3, count: 1 });
+    builder.add(Insn::Or {
+        lhs: r1,
+        rhs: r2,
+        dest: r3,
+    });
+    builder.add(Insn::ResultRow {
+        start: r3,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3165,9 +3211,20 @@ fn test_and_or_combined() {
     builder.add(Insn::Integer { value: 1, dest: r1 });
     builder.add(Insn::Integer { value: 1, dest: r2 });
     builder.add(Insn::Integer { value: 0, dest: r3 });
-    builder.add(Insn::And { lhs: r1, rhs: r2, dest: r4 });
-    builder.add(Insn::Or { lhs: r4, rhs: r3, dest: r5 });
-    builder.add(Insn::ResultRow { start: r5, count: 1 });
+    builder.add(Insn::And {
+        lhs: r1,
+        rhs: r2,
+        dest: r4,
+    });
+    builder.add(Insn::Or {
+        lhs: r4,
+        rhs: r3,
+        dest: r5,
+    });
+    builder.add(Insn::ResultRow {
+        start: r5,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3187,9 +3244,18 @@ fn test_cast_to_integer() {
     let r1 = builder.alloc_register();
 
     // Cast a real number to integer
-    builder.add(Insn::Real { value: 42.7, dest: r1 });
-    builder.add(Insn::Cast { src: r1, affinity: 'D' as i32 }); // 'D' is INTEGER affinity
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Real {
+        value: 42.7,
+        dest: r1,
+    });
+    builder.add(Insn::Cast {
+        src: r1,
+        affinity: 'D' as i32,
+    }); // 'D' is INTEGER affinity
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3205,9 +3271,18 @@ fn test_cast_to_real() {
     let r1 = builder.alloc_register();
 
     // Cast an integer to real
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::Cast { src: r1, affinity: 'E' as i32 }); // 'E' is REAL affinity
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::Cast {
+        src: r1,
+        affinity: 'E' as i32,
+    }); // 'E' is REAL affinity
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3223,9 +3298,15 @@ fn test_real_affinity() {
     let r1 = builder.alloc_register();
 
     // RealAffinity converts integer to real
-    builder.add(Insn::Integer { value: 100, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 100,
+        dest: r1,
+    });
     builder.add(Insn::RealAffinity { src: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3242,9 +3323,19 @@ fn test_is_true_with_true_value() {
     let r2 = builder.alloc_register();
 
     // IsTrue converts value to boolean
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::IsTrue { src: r1, dest: r2, null_value: 0 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::IsTrue {
+        src: r1,
+        dest: r2,
+        null_value: 0,
+    });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3262,8 +3353,15 @@ fn test_is_true_with_false_value() {
 
     // IsTrue with 0 should return false (0)
     builder.add(Insn::Integer { value: 0, dest: r1 });
-    builder.add(Insn::IsTrue { src: r1, dest: r2, null_value: 0 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::IsTrue {
+        src: r1,
+        dest: r2,
+        null_value: 0,
+    });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3281,8 +3379,15 @@ fn test_is_true_with_null() {
 
     // IsTrue with NULL should return the null_value (2 in this case)
     builder.add(Insn::Null { dest: r1, count: 1 });
-    builder.add(Insn::IsTrue { src: r1, dest: r2, null_value: 2 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::IsTrue {
+        src: r1,
+        dest: r2,
+        null_value: 2,
+    });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3302,9 +3407,15 @@ fn test_soft_null() {
     let r1 = builder.alloc_register();
 
     // SoftNull sets register to NULL
-    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
     builder.add(Insn::SoftNull { dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3316,8 +3427,20 @@ fn test_soft_null() {
 fn test_zero_or_null_instruction_exists() {
     // ZeroOrNull has complex semantics involving integer detection and NULL handling
     // This test verifies the instruction variant exists
-    let _ = Insn::ZeroOrNull { src: 0, dest: 1, null_check: 0 };
-    assert_eq!(Insn::ZeroOrNull { src: 0, dest: 1, null_check: 0 }.name(), "ZeroOrNull");
+    let _ = Insn::ZeroOrNull {
+        src: 0,
+        dest: 1,
+        null_check: 0,
+    };
+    assert_eq!(
+        Insn::ZeroOrNull {
+            src: 0,
+            dest: 1,
+            null_check: 0
+        }
+        .name(),
+        "ZeroOrNull"
+    );
 }
 
 // ============================================================================
@@ -3333,20 +3456,37 @@ fn test_begin_subrtn() {
     let r_return = builder.alloc_register();
 
     // Main code
-    builder.add(Insn::Integer { value: 0, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 0,
+        dest: r_result,
+    });
 
     // Use Gosub to call subroutine
-    let gosub_addr = builder.add(Insn::Gosub { return_reg: r_return, target: 0 });
+    let gosub_addr = builder.add(Insn::Gosub {
+        return_reg: r_return,
+        target: 0,
+    });
 
     // After subroutine returns, output result
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     let halt_addr = builder.add(Insn::Goto { target: 0 }); // Jump to halt
 
     // Subroutine starts here
     builder.jump_here(gosub_addr);
-    builder.add(Insn::BeginSubrtn { return_reg: r_return, target: 0 });
-    builder.add(Insn::Integer { value: 42, dest: r_result });
-    builder.add(Insn::Return { return_reg: r_return });
+    builder.add(Insn::BeginSubrtn {
+        return_reg: r_return,
+        target: 0,
+    });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_result,
+    });
+    builder.add(Insn::Return {
+        return_reg: r_return,
+    });
 
     // Halt
     builder.jump_here(halt_addr);
@@ -3369,9 +3509,19 @@ fn test_read_cookie() {
     let r1 = builder.alloc_register();
 
     // Cookie 0 is the schema cookie, should be readable
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::ReadCookie { db_num: 0, dest: r1, cookie: 0 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::ReadCookie {
+        db_num: 0,
+        dest: r1,
+        cookie: 0,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3392,9 +3542,19 @@ fn test_set_and_read_cookie() {
     let r1 = builder.alloc_register();
 
     // Just test that we can read cookies
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::ReadCookie { db_num: 0, dest: r1, cookie: 0 }); // Schema cookie
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::ReadCookie {
+        db_num: 0,
+        dest: r1,
+        cookie: 0,
+    }); // Schema cookie
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3404,7 +3564,11 @@ fn test_set_and_read_cookie() {
     assert!(cookie >= 0);
 
     // Verify SetCookie instruction variant exists
-    let _ = Insn::SetCookie { db_num: 0, cookie: 1, value: 0 };
+    let _ = Insn::SetCookie {
+        db_num: 0,
+        cookie: 1,
+        value: 0,
+    };
 }
 
 // ============================================================================
@@ -3419,9 +3583,18 @@ fn test_pagecount() {
     let r1 = builder.alloc_register();
 
     // Get page count of in-memory database
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::Pagecount { db_num: 0, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::Pagecount {
+        db_num: 0,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3443,9 +3616,18 @@ fn test_transaction_read() {
     let r1 = builder.alloc_register();
 
     // Start a read transaction
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3461,9 +3643,18 @@ fn test_transaction_write() {
     let r1 = builder.alloc_register();
 
     // Start a write transaction
-    builder.add(Insn::Transaction { db_num: 0, write: 1 });
-    builder.add(Insn::Integer { value: 99, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 1,
+    });
+    builder.add(Insn::Integer {
+        value: 99,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3482,8 +3673,14 @@ fn test_auto_commit() {
     let r1 = builder.alloc_register();
 
     // Just test that we can create the instruction and run a simple program
-    builder.add(Insn::Integer { value: 123, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 123,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3491,7 +3688,10 @@ fn test_auto_commit() {
     assert_eq!(program.column_int(0), 123);
 
     // Verify the instruction enum variant exists
-    let _ = Insn::AutoCommit { auto_commit: 1, rollback: 0 };
+    let _ = Insn::AutoCommit {
+        auto_commit: 1,
+        rollback: 0,
+    };
 }
 
 // ============================================================================
@@ -3508,13 +3708,19 @@ fn test_open_ephemeral_and_sequence() {
     let r2 = builder.alloc_register();
 
     // Open ephemeral table with 2 columns
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 2 });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 2,
+    });
 
     // Get sequence number (should start at 0)
     builder.add(Insn::Sequence { cursor, dest: r1 });
     builder.add(Insn::Sequence { cursor, dest: r2 });
 
-    builder.add(Insn::ResultRow { start: r1, count: 2 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 2,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -3539,16 +3745,34 @@ fn test_open_pseudo() {
     let r_result = builder.alloc_register();
 
     // Create a record
-    builder.add(Insn::Integer { value: 42, dest: r_content });
-    builder.add(Insn::MakeRecord { start: r_content, count: 1, dest: r_content });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_content,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r_content,
+        count: 1,
+        dest: r_content,
+    });
 
     // Open pseudo cursor pointing to the record
-    builder.add(Insn::OpenPseudo { cursor, content: r_content, num_columns: 1 });
+    builder.add(Insn::OpenPseudo {
+        cursor,
+        content: r_content,
+        num_columns: 1,
+    });
 
     // Read column from pseudo cursor
-    builder.add(Insn::Column { cursor, column: 0, dest: r_result });
+    builder.add(Insn::Column {
+        cursor,
+        column: 0,
+        dest: r_result,
+    });
 
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -3568,18 +3792,49 @@ fn test_open_pseudo() {
 #[test]
 fn test_sorter_instructions_exist() {
     // Verify sorter instruction variants can be created
-    let _ = Insn::SorterOpen { cursor: 0, num_columns: 1 };
-    let _ = Insn::SorterSort { cursor: 0, target: 0 };
-    let _ = Insn::Sort { cursor: 0, target: 0 };
-    let _ = Insn::SorterNext { cursor: 0, target: 0 };
+    let _ = Insn::SorterOpen {
+        cursor: 0,
+        num_columns: 1,
+    };
+    let _ = Insn::SorterSort {
+        cursor: 0,
+        target: 0,
+    };
+    let _ = Insn::Sort {
+        cursor: 0,
+        target: 0,
+    };
+    let _ = Insn::SorterNext {
+        cursor: 0,
+        target: 0,
+    };
     let _ = Insn::SorterData { cursor: 0, dest: 0 };
     let _ = Insn::SorterInsert { cursor: 0, key: 0 };
-    let _ = Insn::SorterCompare { cursor: 0, target: 0, key: 0, num_fields: 0 };
+    let _ = Insn::SorterCompare {
+        cursor: 0,
+        target: 0,
+        key: 0,
+        num_fields: 0,
+    };
     let _ = Insn::ResetSorter { cursor: 0 };
 
     // Verify they have correct names
-    assert_eq!(Insn::SorterOpen { cursor: 0, num_columns: 1 }.name(), "SorterOpen");
-    assert_eq!(Insn::SorterSort { cursor: 0, target: 0 }.name(), "SorterSort");
+    assert_eq!(
+        Insn::SorterOpen {
+            cursor: 0,
+            num_columns: 1
+        }
+        .name(),
+        "SorterOpen"
+    );
+    assert_eq!(
+        Insn::SorterSort {
+            cursor: 0,
+            target: 0
+        }
+        .name(),
+        "SorterSort"
+    );
     assert_eq!(Insn::ResetSorter { cursor: 0 }.name(), "ResetSorter");
 }
 
@@ -3594,29 +3849,113 @@ fn test_virtual_table_instructions_exist() {
     // instruction variants exist and have correct names.
 
     let _ = Insn::VBegin;
-    let _ = Insn::VCreate { db_num: 0, name_reg: 1 };
+    let _ = Insn::VCreate {
+        db_num: 0,
+        name_reg: 1,
+    };
     let _ = Insn::VDestroy { db_num: 0 };
     let _ = Insn::VOpen { cursor: 0 };
-    let _ = Insn::VCheck { schema: 0, dest: 1, arg: 0 };
-    let _ = Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 };
-    let _ = Insn::VFilter { cursor: 0, target: 10, args_reg: 1 };
-    let _ = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 };
-    let _ = Insn::VNext { cursor: 0, target: 5 };
+    let _ = Insn::VCheck {
+        schema: 0,
+        dest: 1,
+        arg: 0,
+    };
+    let _ = Insn::VInitIn {
+        cursor: 0,
+        dest: 1,
+        cache_reg: 2,
+    };
+    let _ = Insn::VFilter {
+        cursor: 0,
+        target: 10,
+        args_reg: 1,
+    };
+    let _ = Insn::VColumn {
+        cursor: 0,
+        column: 0,
+        dest: 1,
+        flags: 0,
+    };
+    let _ = Insn::VNext {
+        cursor: 0,
+        target: 5,
+    };
     let _ = Insn::VRename { name_reg: 1 };
-    let _ = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 };
+    let _ = Insn::VUpdate {
+        update_rowid: 0,
+        argc: 3,
+        args_reg: 1,
+        on_error: 0,
+    };
 
     // Verify correct names
     assert_eq!(Insn::VBegin.name(), "VBegin");
-    assert_eq!(Insn::VCreate { db_num: 0, name_reg: 1 }.name(), "VCreate");
+    assert_eq!(
+        Insn::VCreate {
+            db_num: 0,
+            name_reg: 1
+        }
+        .name(),
+        "VCreate"
+    );
     assert_eq!(Insn::VDestroy { db_num: 0 }.name(), "VDestroy");
     assert_eq!(Insn::VOpen { cursor: 0 }.name(), "VOpen");
-    assert_eq!(Insn::VCheck { schema: 0, dest: 1, arg: 0 }.name(), "VCheck");
-    assert_eq!(Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }.name(), "VInitIn");
-    assert_eq!(Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }.name(), "VFilter");
-    assert_eq!(Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }.name(), "VColumn");
-    assert_eq!(Insn::VNext { cursor: 0, target: 5 }.name(), "VNext");
+    assert_eq!(
+        Insn::VCheck {
+            schema: 0,
+            dest: 1,
+            arg: 0
+        }
+        .name(),
+        "VCheck"
+    );
+    assert_eq!(
+        Insn::VInitIn {
+            cursor: 0,
+            dest: 1,
+            cache_reg: 2
+        }
+        .name(),
+        "VInitIn"
+    );
+    assert_eq!(
+        Insn::VFilter {
+            cursor: 0,
+            target: 10,
+            args_reg: 1
+        }
+        .name(),
+        "VFilter"
+    );
+    assert_eq!(
+        Insn::VColumn {
+            cursor: 0,
+            column: 0,
+            dest: 1,
+            flags: 0
+        }
+        .name(),
+        "VColumn"
+    );
+    assert_eq!(
+        Insn::VNext {
+            cursor: 0,
+            target: 5
+        }
+        .name(),
+        "VNext"
+    );
     assert_eq!(Insn::VRename { name_reg: 1 }.name(), "VRename");
-    assert_eq!(Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }.name(), "VUpdate");
+    assert_eq!(
+        Insn::VUpdate {
+            update_rowid: 0,
+            argc: 3,
+            args_reg: 1,
+            on_error: 0
+        }
+        .name(),
+        "VUpdate"
+    );
 }
 
 #[test]
@@ -3625,32 +3964,167 @@ fn test_virtual_table_raw_opcodes() {
 
     // Verify raw opcode values match SQLite's definitions
     assert_eq!(Insn::VBegin.raw_opcode(), RawOpcode::VBegin as u8);
-    assert_eq!(Insn::VCreate { db_num: 0, name_reg: 1 }.raw_opcode(), RawOpcode::VCreate as u8);
-    assert_eq!(Insn::VDestroy { db_num: 0 }.raw_opcode(), RawOpcode::VDestroy as u8);
-    assert_eq!(Insn::VOpen { cursor: 0 }.raw_opcode(), RawOpcode::VOpen as u8);
-    assert_eq!(Insn::VCheck { schema: 0, dest: 1, arg: 0 }.raw_opcode(), RawOpcode::VCheck as u8);
-    assert_eq!(Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }.raw_opcode(), RawOpcode::VInitIn as u8);
-    assert_eq!(Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }.raw_opcode(), RawOpcode::VFilter as u8);
-    assert_eq!(Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }.raw_opcode(), RawOpcode::VColumn as u8);
-    assert_eq!(Insn::VNext { cursor: 0, target: 5 }.raw_opcode(), RawOpcode::VNext as u8);
-    assert_eq!(Insn::VRename { name_reg: 1 }.raw_opcode(), RawOpcode::VRename as u8);
-    assert_eq!(Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }.raw_opcode(), RawOpcode::VUpdate as u8);
+    assert_eq!(
+        Insn::VCreate {
+            db_num: 0,
+            name_reg: 1
+        }
+        .raw_opcode(),
+        RawOpcode::VCreate as u8
+    );
+    assert_eq!(
+        Insn::VDestroy { db_num: 0 }.raw_opcode(),
+        RawOpcode::VDestroy as u8
+    );
+    assert_eq!(
+        Insn::VOpen { cursor: 0 }.raw_opcode(),
+        RawOpcode::VOpen as u8
+    );
+    assert_eq!(
+        Insn::VCheck {
+            schema: 0,
+            dest: 1,
+            arg: 0
+        }
+        .raw_opcode(),
+        RawOpcode::VCheck as u8
+    );
+    assert_eq!(
+        Insn::VInitIn {
+            cursor: 0,
+            dest: 1,
+            cache_reg: 2
+        }
+        .raw_opcode(),
+        RawOpcode::VInitIn as u8
+    );
+    assert_eq!(
+        Insn::VFilter {
+            cursor: 0,
+            target: 10,
+            args_reg: 1
+        }
+        .raw_opcode(),
+        RawOpcode::VFilter as u8
+    );
+    assert_eq!(
+        Insn::VColumn {
+            cursor: 0,
+            column: 0,
+            dest: 1,
+            flags: 0
+        }
+        .raw_opcode(),
+        RawOpcode::VColumn as u8
+    );
+    assert_eq!(
+        Insn::VNext {
+            cursor: 0,
+            target: 5
+        }
+        .raw_opcode(),
+        RawOpcode::VNext as u8
+    );
+    assert_eq!(
+        Insn::VRename { name_reg: 1 }.raw_opcode(),
+        RawOpcode::VRename as u8
+    );
+    assert_eq!(
+        Insn::VUpdate {
+            update_rowid: 0,
+            argc: 3,
+            args_reg: 1,
+            on_error: 0
+        }
+        .raw_opcode(),
+        RawOpcode::VUpdate as u8
+    );
 }
 
 #[test]
 fn test_virtual_table_display() {
     // Test Display implementation (uses name())
     assert_eq!(format!("{}", Insn::VBegin), "VBegin");
-    assert_eq!(format!("{}", Insn::VCreate { db_num: 0, name_reg: 1 }), "VCreate");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VCreate {
+                db_num: 0,
+                name_reg: 1
+            }
+        ),
+        "VCreate"
+    );
     assert_eq!(format!("{}", Insn::VDestroy { db_num: 0 }), "VDestroy");
     assert_eq!(format!("{}", Insn::VOpen { cursor: 0 }), "VOpen");
-    assert_eq!(format!("{}", Insn::VCheck { schema: 0, dest: 1, arg: 0 }), "VCheck");
-    assert_eq!(format!("{}", Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }), "VInitIn");
-    assert_eq!(format!("{}", Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }), "VFilter");
-    assert_eq!(format!("{}", Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }), "VColumn");
-    assert_eq!(format!("{}", Insn::VNext { cursor: 0, target: 5 }), "VNext");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VCheck {
+                schema: 0,
+                dest: 1,
+                arg: 0
+            }
+        ),
+        "VCheck"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VInitIn {
+                cursor: 0,
+                dest: 1,
+                cache_reg: 2
+            }
+        ),
+        "VInitIn"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VFilter {
+                cursor: 0,
+                target: 10,
+                args_reg: 1
+            }
+        ),
+        "VFilter"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VColumn {
+                cursor: 0,
+                column: 0,
+                dest: 1,
+                flags: 0
+            }
+        ),
+        "VColumn"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VNext {
+                cursor: 0,
+                target: 5
+            }
+        ),
+        "VNext"
+    );
     assert_eq!(format!("{}", Insn::VRename { name_reg: 1 }), "VRename");
-    assert_eq!(format!("{}", Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }), "VUpdate");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::VUpdate {
+                update_rowid: 0,
+                argc: 3,
+                args_reg: 1,
+                on_error: 0
+            }
+        ),
+        "VUpdate"
+    );
 }
 
 #[test]
@@ -3660,13 +4134,21 @@ fn test_virtual_table_debug() {
     let debug_str = format!("{:?}", vbegin);
     assert!(debug_str.contains("VBegin"));
 
-    let vcreate = Insn::VCreate { db_num: 1, name_reg: 2 };
+    let vcreate = Insn::VCreate {
+        db_num: 1,
+        name_reg: 2,
+    };
     let debug_str = format!("{:?}", vcreate);
     assert!(debug_str.contains("VCreate"));
     assert!(debug_str.contains("db_num: 1"));
     assert!(debug_str.contains("name_reg: 2"));
 
-    let vcolumn = Insn::VColumn { cursor: 1, column: 2, dest: 3, flags: 4 };
+    let vcolumn = Insn::VColumn {
+        cursor: 1,
+        column: 2,
+        dest: 3,
+        flags: 4,
+    };
     let debug_str = format!("{:?}", vcolumn);
     assert!(debug_str.contains("VColumn"));
     assert!(debug_str.contains("cursor: 1"));
@@ -3682,11 +4164,19 @@ fn test_virtual_table_clone() {
     let vbegin_clone = vbegin.clone();
     assert_eq!(vbegin.name(), vbegin_clone.name());
 
-    let vcreate = Insn::VCreate { db_num: 1, name_reg: 2 };
+    let vcreate = Insn::VCreate {
+        db_num: 1,
+        name_reg: 2,
+    };
     let vcreate_clone = vcreate.clone();
     assert_eq!(vcreate.raw_opcode(), vcreate_clone.raw_opcode());
 
-    let vupdate = Insn::VUpdate { update_rowid: 1, argc: 3, args_reg: 2, on_error: 5 };
+    let vupdate = Insn::VUpdate {
+        update_rowid: 1,
+        argc: 3,
+        args_reg: 2,
+        on_error: 5,
+    };
     let vupdate_clone = vupdate.clone();
     assert_eq!(vupdate.name(), vupdate_clone.name());
 }
@@ -3694,9 +4184,21 @@ fn test_virtual_table_clone() {
 #[test]
 fn test_vfilter_with_different_targets() {
     // Test VFilter with various jump targets
-    let vfilter1 = Insn::VFilter { cursor: 0, target: 0, args_reg: 1 };
-    let vfilter2 = Insn::VFilter { cursor: 0, target: 100, args_reg: 1 };
-    let vfilter3 = Insn::VFilter { cursor: 5, target: 50, args_reg: 10 };
+    let vfilter1 = Insn::VFilter {
+        cursor: 0,
+        target: 0,
+        args_reg: 1,
+    };
+    let vfilter2 = Insn::VFilter {
+        cursor: 0,
+        target: 100,
+        args_reg: 1,
+    };
+    let vfilter3 = Insn::VFilter {
+        cursor: 5,
+        target: 50,
+        args_reg: 10,
+    };
 
     assert_eq!(vfilter1.name(), "VFilter");
     assert_eq!(vfilter2.name(), "VFilter");
@@ -3710,9 +4212,18 @@ fn test_vfilter_with_different_targets() {
 #[test]
 fn test_vnext_jump_behavior() {
     // Test VNext with various configurations
-    let vnext1 = Insn::VNext { cursor: 0, target: 5 };
-    let vnext2 = Insn::VNext { cursor: 1, target: 10 };
-    let vnext3 = Insn::VNext { cursor: 2, target: 0 };
+    let vnext1 = Insn::VNext {
+        cursor: 0,
+        target: 5,
+    };
+    let vnext2 = Insn::VNext {
+        cursor: 1,
+        target: 10,
+    };
+    let vnext3 = Insn::VNext {
+        cursor: 2,
+        target: 0,
+    };
 
     assert_eq!(vnext1.name(), "VNext");
     assert_eq!(vnext2.name(), "VNext");
@@ -3722,8 +4233,18 @@ fn test_vnext_jump_behavior() {
 #[test]
 fn test_vcolumn_flags() {
     // Test VColumn with different flag values
-    let vcol_no_flags = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 };
-    let vcol_with_flags = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0x10 }; // OPFLAG_NOCHNG
+    let vcol_no_flags = Insn::VColumn {
+        cursor: 0,
+        column: 0,
+        dest: 1,
+        flags: 0,
+    };
+    let vcol_with_flags = Insn::VColumn {
+        cursor: 0,
+        column: 0,
+        dest: 1,
+        flags: 0x10,
+    }; // OPFLAG_NOCHNG
 
     assert_eq!(vcol_no_flags.name(), "VColumn");
     assert_eq!(vcol_with_flags.name(), "VColumn");
@@ -3733,9 +4254,24 @@ fn test_vcolumn_flags() {
 #[test]
 fn test_vupdate_error_actions() {
     // Test VUpdate with different on_error values
-    let vupdate_abort = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 };
-    let vupdate_fail = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 1 };
-    let vupdate_replace = Insn::VUpdate { update_rowid: 1, argc: 5, args_reg: 2, on_error: 5 };
+    let vupdate_abort = Insn::VUpdate {
+        update_rowid: 0,
+        argc: 3,
+        args_reg: 1,
+        on_error: 0,
+    };
+    let vupdate_fail = Insn::VUpdate {
+        update_rowid: 0,
+        argc: 3,
+        args_reg: 1,
+        on_error: 1,
+    };
+    let vupdate_replace = Insn::VUpdate {
+        update_rowid: 1,
+        argc: 5,
+        args_reg: 2,
+        on_error: 5,
+    };
 
     assert_eq!(vupdate_abort.name(), "VUpdate");
     assert_eq!(vupdate_fail.name(), "VUpdate");
@@ -3751,18 +4287,78 @@ fn test_function_instructions_exist() {
     // Function operations require FuncDef structures in P4.
     // These tests verify the instruction variants exist.
 
-    let _ = Insn::Function { const_mask: 0, args: 1, dest: 2 };
-    let _ = Insn::PureFunc { const_mask: 0, args: 1, dest: 2 };
-    let _ = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 };
-    let _ = Insn::AggValue { num_args: 2, dest: 3 };
-    let _ = Insn::AggInverse { args: 1, accum: 2, num_args: 3 };
+    let _ = Insn::Function {
+        const_mask: 0,
+        args: 1,
+        dest: 2,
+    };
+    let _ = Insn::PureFunc {
+        const_mask: 0,
+        args: 1,
+        dest: 2,
+    };
+    let _ = Insn::AggStep1 {
+        is_inverse: 0,
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
+    let _ = Insn::AggValue {
+        num_args: 2,
+        dest: 3,
+    };
+    let _ = Insn::AggInverse {
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
 
     // Verify correct names
-    assert_eq!(Insn::Function { const_mask: 0, args: 1, dest: 2 }.name(), "Function");
-    assert_eq!(Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }.name(), "PureFunc");
-    assert_eq!(Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }.name(), "AggStep1");
-    assert_eq!(Insn::AggValue { num_args: 2, dest: 3 }.name(), "AggValue");
-    assert_eq!(Insn::AggInverse { args: 1, accum: 2, num_args: 3 }.name(), "AggInverse");
+    assert_eq!(
+        Insn::Function {
+            const_mask: 0,
+            args: 1,
+            dest: 2
+        }
+        .name(),
+        "Function"
+    );
+    assert_eq!(
+        Insn::PureFunc {
+            const_mask: 0,
+            args: 1,
+            dest: 2
+        }
+        .name(),
+        "PureFunc"
+    );
+    assert_eq!(
+        Insn::AggStep1 {
+            is_inverse: 0,
+            args: 1,
+            accum: 2,
+            num_args: 3
+        }
+        .name(),
+        "AggStep1"
+    );
+    assert_eq!(
+        Insn::AggValue {
+            num_args: 2,
+            dest: 3
+        }
+        .name(),
+        "AggValue"
+    );
+    assert_eq!(
+        Insn::AggInverse {
+            args: 1,
+            accum: 2,
+            num_args: 3
+        }
+        .name(),
+        "AggInverse"
+    );
 }
 
 #[test]
@@ -3770,34 +4366,133 @@ fn test_function_raw_opcodes() {
     use sqlite_vdbe::RawOpcode;
 
     // Verify raw opcode values match SQLite's definitions
-    assert_eq!(Insn::Function { const_mask: 0, args: 1, dest: 2 }.raw_opcode(), RawOpcode::Function as u8);
-    assert_eq!(Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }.raw_opcode(), RawOpcode::PureFunc as u8);
-    assert_eq!(Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }.raw_opcode(), RawOpcode::AggStep1 as u8);
-    assert_eq!(Insn::AggValue { num_args: 2, dest: 3 }.raw_opcode(), RawOpcode::AggValue as u8);
-    assert_eq!(Insn::AggInverse { args: 1, accum: 2, num_args: 3 }.raw_opcode(), RawOpcode::AggInverse as u8);
+    assert_eq!(
+        Insn::Function {
+            const_mask: 0,
+            args: 1,
+            dest: 2
+        }
+        .raw_opcode(),
+        RawOpcode::Function as u8
+    );
+    assert_eq!(
+        Insn::PureFunc {
+            const_mask: 0,
+            args: 1,
+            dest: 2
+        }
+        .raw_opcode(),
+        RawOpcode::PureFunc as u8
+    );
+    assert_eq!(
+        Insn::AggStep1 {
+            is_inverse: 0,
+            args: 1,
+            accum: 2,
+            num_args: 3
+        }
+        .raw_opcode(),
+        RawOpcode::AggStep1 as u8
+    );
+    assert_eq!(
+        Insn::AggValue {
+            num_args: 2,
+            dest: 3
+        }
+        .raw_opcode(),
+        RawOpcode::AggValue as u8
+    );
+    assert_eq!(
+        Insn::AggInverse {
+            args: 1,
+            accum: 2,
+            num_args: 3
+        }
+        .raw_opcode(),
+        RawOpcode::AggInverse as u8
+    );
 }
 
 #[test]
 fn test_function_display() {
     // Test Display implementation
-    assert_eq!(format!("{}", Insn::Function { const_mask: 0, args: 1, dest: 2 }), "Function");
-    assert_eq!(format!("{}", Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }), "PureFunc");
-    assert_eq!(format!("{}", Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }), "AggStep1");
-    assert_eq!(format!("{}", Insn::AggValue { num_args: 2, dest: 3 }), "AggValue");
-    assert_eq!(format!("{}", Insn::AggInverse { args: 1, accum: 2, num_args: 3 }), "AggInverse");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::Function {
+                const_mask: 0,
+                args: 1,
+                dest: 2
+            }
+        ),
+        "Function"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::PureFunc {
+                const_mask: 0,
+                args: 1,
+                dest: 2
+            }
+        ),
+        "PureFunc"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::AggStep1 {
+                is_inverse: 0,
+                args: 1,
+                accum: 2,
+                num_args: 3
+            }
+        ),
+        "AggStep1"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::AggValue {
+                num_args: 2,
+                dest: 3
+            }
+        ),
+        "AggValue"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::AggInverse {
+                args: 1,
+                accum: 2,
+                num_args: 3
+            }
+        ),
+        "AggInverse"
+    );
 }
 
 #[test]
 fn test_function_debug() {
     // Test Debug implementation
-    let func = Insn::Function { const_mask: 7, args: 1, dest: 2 };
+    let func = Insn::Function {
+        const_mask: 7,
+        args: 1,
+        dest: 2,
+    };
     let debug_str = format!("{:?}", func);
     assert!(debug_str.contains("Function"));
     assert!(debug_str.contains("const_mask: 7"));
     assert!(debug_str.contains("args: 1"));
     assert!(debug_str.contains("dest: 2"));
 
-    let aggstep = Insn::AggStep1 { is_inverse: 1, args: 2, accum: 3, num_args: 4 };
+    let aggstep = Insn::AggStep1 {
+        is_inverse: 1,
+        args: 2,
+        accum: 3,
+        num_args: 4,
+    };
     let debug_str = format!("{:?}", aggstep);
     assert!(debug_str.contains("AggStep1"));
     assert!(debug_str.contains("is_inverse: 1"));
@@ -3807,12 +4502,20 @@ fn test_function_debug() {
 #[test]
 fn test_function_clone() {
     // Test Clone implementation
-    let func = Insn::Function { const_mask: 15, args: 1, dest: 2 };
+    let func = Insn::Function {
+        const_mask: 15,
+        args: 1,
+        dest: 2,
+    };
     let func_clone = func.clone();
     assert_eq!(func.name(), func_clone.name());
     assert_eq!(func.raw_opcode(), func_clone.raw_opcode());
 
-    let pure = Insn::PureFunc { const_mask: 3, args: 4, dest: 5 };
+    let pure = Insn::PureFunc {
+        const_mask: 3,
+        args: 4,
+        dest: 5,
+    };
     let pure_clone = pure.clone();
     assert_eq!(pure.name(), pure_clone.name());
 }
@@ -3820,9 +4523,21 @@ fn test_function_clone() {
 #[test]
 fn test_function_const_mask_variations() {
     // Test Function with different const_mask values (bitmask for constant args)
-    let func_no_const = Insn::Function { const_mask: 0, args: 1, dest: 2 };
-    let func_first_const = Insn::Function { const_mask: 1, args: 1, dest: 2 };
-    let func_all_const = Insn::Function { const_mask: 0xFF, args: 1, dest: 2 };
+    let func_no_const = Insn::Function {
+        const_mask: 0,
+        args: 1,
+        dest: 2,
+    };
+    let func_first_const = Insn::Function {
+        const_mask: 1,
+        args: 1,
+        dest: 2,
+    };
+    let func_all_const = Insn::Function {
+        const_mask: 0xFF,
+        args: 1,
+        dest: 2,
+    };
 
     assert_eq!(func_no_const.name(), "Function");
     assert_eq!(func_first_const.name(), "Function");
@@ -3832,8 +4547,18 @@ fn test_function_const_mask_variations() {
 #[test]
 fn test_aggstep1_inverse_flag() {
     // Test AggStep1 with inverse flag
-    let step = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 };
-    let inverse = Insn::AggStep1 { is_inverse: 1, args: 1, accum: 2, num_args: 3 };
+    let step = Insn::AggStep1 {
+        is_inverse: 0,
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
+    let inverse = Insn::AggStep1 {
+        is_inverse: 1,
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
 
     assert_eq!(step.name(), "AggStep1");
     assert_eq!(inverse.name(), "AggStep1");
@@ -3843,16 +4568,37 @@ fn test_aggstep1_inverse_flag() {
 #[test]
 fn test_agg_operations_different_arg_counts() {
     // Test aggregate operations with various argument counts
-    let agg1 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 1 };
-    let agg2 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 5 };
-    let agg3 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 10 };
+    let agg1 = Insn::AggStep1 {
+        is_inverse: 0,
+        args: 1,
+        accum: 10,
+        num_args: 1,
+    };
+    let agg2 = Insn::AggStep1 {
+        is_inverse: 0,
+        args: 1,
+        accum: 10,
+        num_args: 5,
+    };
+    let agg3 = Insn::AggStep1 {
+        is_inverse: 0,
+        args: 1,
+        accum: 10,
+        num_args: 10,
+    };
 
     assert_eq!(agg1.name(), "AggStep1");
     assert_eq!(agg2.name(), "AggStep1");
     assert_eq!(agg3.name(), "AggStep1");
 
-    let val1 = Insn::AggValue { num_args: 0, dest: 1 };
-    let val2 = Insn::AggValue { num_args: 5, dest: 1 };
+    let val1 = Insn::AggValue {
+        num_args: 0,
+        dest: 1,
+    };
+    let val2 = Insn::AggValue {
+        num_args: 5,
+        dest: 1,
+    };
 
     assert_eq!(val1.name(), "AggValue");
     assert_eq!(val2.name(), "AggValue");
@@ -3863,8 +4609,16 @@ fn test_pure_func_vs_function() {
     // Verify PureFunc and Function are distinct opcodes
     use sqlite_vdbe::RawOpcode;
 
-    let func = Insn::Function { const_mask: 0, args: 1, dest: 2 };
-    let pure = Insn::PureFunc { const_mask: 0, args: 1, dest: 2 };
+    let func = Insn::Function {
+        const_mask: 0,
+        args: 1,
+        dest: 2,
+    };
+    let pure = Insn::PureFunc {
+        const_mask: 0,
+        args: 1,
+        dest: 2,
+    };
 
     assert_ne!(func.raw_opcode(), pure.raw_opcode());
     assert_eq!(func.raw_opcode(), RawOpcode::Function as u8);
@@ -3876,8 +4630,17 @@ fn test_agg_inverse_vs_aggstep() {
     // Verify AggInverse and AggStep are distinct opcodes
     use sqlite_vdbe::RawOpcode;
 
-    let step = Insn::AggStep { func_def: 0, args: 1, accum: 2, num_args: 3 };
-    let inverse = Insn::AggInverse { args: 1, accum: 2, num_args: 3 };
+    let step = Insn::AggStep {
+        func_def: 0,
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
+    let inverse = Insn::AggInverse {
+        args: 1,
+        accum: 2,
+        num_args: 3,
+    };
 
     assert_ne!(step.raw_opcode(), inverse.raw_opcode());
     assert_eq!(step.raw_opcode(), RawOpcode::AggStep as u8);
@@ -3900,15 +4663,24 @@ fn test_if_not_open_jumps_when_closed() {
     let jump = builder.add(Insn::IfNotOpen { cursor, target: 0 });
 
     // This should be skipped
-    builder.add(Insn::Integer { value: 999, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 999,
+        dest: r_result,
+    });
     let skip = builder.add(Insn::Goto { target: 0 });
 
     // Jump lands here
     builder.jump_here(jump);
-    builder.add(Insn::Integer { value: 42, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_result,
+    });
 
     builder.jump_here(skip);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -3931,11 +4703,29 @@ fn test_if_not_open_falls_through_when_open() {
     let r_result = builder.alloc_register();
 
     // Open an ephemeral cursor and insert a row to ensure it's not NULL row
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
-    builder.add(Insn::Integer { value: 1, dest: r_data });
-    builder.add(Insn::MakeRecord { start: r_data, count: 1, dest: r_data });
-    builder.add(Insn::NewRowid { cursor, dest: r_key, prev_rowid: 0 });
-    builder.add(Insn::Insert { cursor, data: r_data, rowid: r_key });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_data,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r_data,
+        count: 1,
+        dest: r_data,
+    });
+    builder.add(Insn::NewRowid {
+        cursor,
+        dest: r_key,
+        prev_rowid: 0,
+    });
+    builder.add(Insn::Insert {
+        cursor,
+        data: r_data,
+        rowid: r_key,
+    });
 
     // Rewind to position cursor on a real row
     let rewind_done = builder.add(Insn::Rewind { cursor, target: 0 });
@@ -3944,16 +4734,25 @@ fn test_if_not_open_falls_through_when_open() {
     let jump = builder.add(Insn::IfNotOpen { cursor, target: 0 });
 
     // This should execute (fall through)
-    builder.add(Insn::Integer { value: 42, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_result,
+    });
     let skip = builder.add(Insn::Goto { target: 0 });
 
     // Jump lands here (shouldn't reach if cursor is properly open)
     builder.jump_here(jump);
     builder.jump_here(rewind_done);
-    builder.add(Insn::Integer { value: 999, dest: r_result });
+    builder.add(Insn::Integer {
+        value: 999,
+        dest: r_result,
+    });
 
     builder.jump_here(skip);
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -3991,8 +4790,14 @@ fn test_fk_check() {
 
     // FkCheck with no violations should succeed
     builder.add(Insn::FkCheck);
-    builder.add(Insn::Integer { value: 42, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -4012,9 +4817,19 @@ fn test_journal_mode() {
     let r1 = builder.alloc_register();
 
     // Query journal mode
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::JournalMode { db_num: 0, target: 0, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::JournalMode {
+        db_num: 0,
+        target: 0,
+        dest: r1,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -4041,22 +4856,52 @@ fn test_open_dup() {
     let r_seq2 = builder.alloc_register();
 
     // Open ephemeral table
-    builder.add(Insn::OpenEphemeral { cursor: cursor1, num_columns: 2 });
+    builder.add(Insn::OpenEphemeral {
+        cursor: cursor1,
+        num_columns: 2,
+    });
 
     // Insert a row
-    builder.add(Insn::Integer { value: 1, dest: r_key });
-    builder.add(Insn::MakeRecord { start: r_key, count: 1, dest: r_data });
-    builder.add(Insn::NewRowid { cursor: cursor1, dest: r_key, prev_rowid: 0 });
-    builder.add(Insn::Insert { cursor: cursor1, data: r_data, rowid: r_key });
+    builder.add(Insn::Integer {
+        value: 1,
+        dest: r_key,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r_key,
+        count: 1,
+        dest: r_data,
+    });
+    builder.add(Insn::NewRowid {
+        cursor: cursor1,
+        dest: r_key,
+        prev_rowid: 0,
+    });
+    builder.add(Insn::Insert {
+        cursor: cursor1,
+        data: r_data,
+        rowid: r_key,
+    });
 
     // Duplicate the cursor
-    builder.add(Insn::OpenDup { cursor: cursor2, orig_cursor: cursor1 });
+    builder.add(Insn::OpenDup {
+        cursor: cursor2,
+        orig_cursor: cursor1,
+    });
 
     // Get sequences from both cursors
-    builder.add(Insn::Sequence { cursor: cursor1, dest: r_seq1 });
-    builder.add(Insn::Sequence { cursor: cursor2, dest: r_seq2 });
+    builder.add(Insn::Sequence {
+        cursor: cursor1,
+        dest: r_seq1,
+    });
+    builder.add(Insn::Sequence {
+        cursor: cursor2,
+        dest: r_seq2,
+    });
 
-    builder.add(Insn::ResultRow { start: r_seq1, count: 2 });
+    builder.add(Insn::ResultRow {
+        start: r_seq1,
+        count: 2,
+    });
     builder.add(Insn::Close { cursor: cursor1 });
     builder.add(Insn::Close { cursor: cursor2 });
     builder.add(Insn::Halt);
@@ -4082,9 +4927,19 @@ fn test_create_btree() {
     let r_root = builder.alloc_register();
 
     // Create a new btree (table)
-    builder.add(Insn::Transaction { db_num: 0, write: 1 });
-    builder.add(Insn::CreateBtree { db_num: 0, dest: r_root, flags: 1 }); // 1 = BTREE_INTKEY
-    builder.add(Insn::ResultRow { start: r_root, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 1,
+    });
+    builder.add(Insn::CreateBtree {
+        db_num: 0,
+        dest: r_root,
+        flags: 1,
+    }); // 1 = BTREE_INTKEY
+    builder.add(Insn::ResultRow {
+        start: r_root,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -4107,9 +4962,15 @@ fn test_open_autoindex() {
     let r1 = builder.alloc_register();
 
     // Open auto-created index
-    builder.add(Insn::OpenAutoindex { cursor, num_columns: 2 });
+    builder.add(Insn::OpenAutoindex {
+        cursor,
+        num_columns: 2,
+    });
     builder.add(Insn::Sequence { cursor, dest: r1 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -4133,27 +4994,66 @@ fn test_seek_end() {
     let r_result = builder.alloc_register();
 
     // Open ephemeral table
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
 
     // Insert some rows
     for i in 1..=3 {
-        builder.add(Insn::Integer { value: i * 10, dest: r_data });
-        builder.add(Insn::MakeRecord { start: r_data, count: 1, dest: r_data });
-        builder.add(Insn::NewRowid { cursor, dest: r_key, prev_rowid: 0 });
-        builder.add(Insn::Insert { cursor, data: r_data, rowid: r_key });
+        builder.add(Insn::Integer {
+            value: i * 10,
+            dest: r_data,
+        });
+        builder.add(Insn::MakeRecord {
+            start: r_data,
+            count: 1,
+            dest: r_data,
+        });
+        builder.add(Insn::NewRowid {
+            cursor,
+            dest: r_key,
+            prev_rowid: 0,
+        });
+        builder.add(Insn::Insert {
+            cursor,
+            data: r_data,
+            rowid: r_key,
+        });
     }
 
     // SeekEnd positions for appending
     builder.add(Insn::SeekEnd { cursor });
 
     // Insert another row (should get highest rowid)
-    builder.add(Insn::Integer { value: 40, dest: r_data });
-    builder.add(Insn::MakeRecord { start: r_data, count: 1, dest: r_data });
-    builder.add(Insn::NewRowid { cursor, dest: r_key, prev_rowid: 0 });
-    builder.add(Insn::Insert { cursor, data: r_data, rowid: r_key });
+    builder.add(Insn::Integer {
+        value: 40,
+        dest: r_data,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r_data,
+        count: 1,
+        dest: r_data,
+    });
+    builder.add(Insn::NewRowid {
+        cursor,
+        dest: r_key,
+        prev_rowid: 0,
+    });
+    builder.add(Insn::Insert {
+        cursor,
+        data: r_data,
+        rowid: r_key,
+    });
 
-    builder.add(Insn::SCopy { src: r_key, dest: r_result });
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::SCopy {
+        src: r_key,
+        dest: r_result,
+    });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -4176,9 +5076,18 @@ fn test_count_empty() {
     let r_count = builder.alloc_register();
 
     // Open empty ephemeral table
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
-    builder.add(Insn::Count { cursor, dest: r_count });
-    builder.add(Insn::ResultRow { start: r_count, count: 1 });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
+    builder.add(Insn::Count {
+        cursor,
+        dest: r_count,
+    });
+    builder.add(Insn::ResultRow {
+        start: r_count,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -4198,17 +5107,41 @@ fn test_count_with_rows() {
     let r_count = builder.alloc_register();
 
     // Open ephemeral table and insert 5 rows
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
 
     for i in 1..=5 {
-        builder.add(Insn::Integer { value: i, dest: r_data });
-        builder.add(Insn::MakeRecord { start: r_data, count: 1, dest: r_data });
-        builder.add(Insn::NewRowid { cursor, dest: r_key, prev_rowid: 0 });
-        builder.add(Insn::Insert { cursor, data: r_data, rowid: r_key });
+        builder.add(Insn::Integer {
+            value: i,
+            dest: r_data,
+        });
+        builder.add(Insn::MakeRecord {
+            start: r_data,
+            count: 1,
+            dest: r_data,
+        });
+        builder.add(Insn::NewRowid {
+            cursor,
+            dest: r_key,
+            prev_rowid: 0,
+        });
+        builder.add(Insn::Insert {
+            cursor,
+            data: r_data,
+            rowid: r_key,
+        });
     }
 
-    builder.add(Insn::Count { cursor, dest: r_count });
-    builder.add(Insn::ResultRow { start: r_count, count: 1 });
+    builder.add(Insn::Count {
+        cursor,
+        dest: r_count,
+    });
+    builder.add(Insn::ResultRow {
+        start: r_count,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -4234,22 +5167,54 @@ fn test_row_data() {
     let r_result = builder.alloc_register();
 
     // Open ephemeral table and insert a row
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
-    builder.add(Insn::Integer { value: 42, dest: r_data });
-    builder.add(Insn::MakeRecord { start: r_data, count: 1, dest: r_data });
-    builder.add(Insn::NewRowid { cursor, dest: r_key, prev_rowid: 0 });
-    builder.add(Insn::Insert { cursor, data: r_data, rowid: r_key });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_data,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r_data,
+        count: 1,
+        dest: r_data,
+    });
+    builder.add(Insn::NewRowid {
+        cursor,
+        dest: r_key,
+        prev_rowid: 0,
+    });
+    builder.add(Insn::Insert {
+        cursor,
+        data: r_data,
+        rowid: r_key,
+    });
 
     // Rewind and get row data
     let rewind_end = builder.add(Insn::Rewind { cursor, target: 0 });
-    builder.add(Insn::RowData { cursor, dest: r_row });
+    builder.add(Insn::RowData {
+        cursor,
+        dest: r_row,
+    });
 
     // Use pseudo cursor to read the row data
-    builder.add(Insn::OpenPseudo { cursor: pseudo, content: r_row, num_columns: 1 });
-    builder.add(Insn::Column { cursor: pseudo, column: 0, dest: r_result });
+    builder.add(Insn::OpenPseudo {
+        cursor: pseudo,
+        content: r_row,
+        num_columns: 1,
+    });
+    builder.add(Insn::Column {
+        cursor: pseudo,
+        column: 0,
+        dest: r_result,
+    });
     builder.add(Insn::Close { cursor: pseudo });
 
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
 
     builder.jump_here(rewind_end);
     builder.add(Insn::Close { cursor });
@@ -4275,9 +5240,19 @@ fn test_blob_via_makerecord() {
     let r2 = builder.alloc_register();
 
     // Create a record containing an integer - this produces blob-like binary data
-    builder.add(Insn::Integer { value: 0x01020304, dest: r1 });
-    builder.add(Insn::MakeRecord { start: r1, count: 1, dest: r2 });
-    builder.add(Insn::ResultRow { start: r2, count: 1 });
+    builder.add(Insn::Integer {
+        value: 0x01020304,
+        dest: r1,
+    });
+    builder.add(Insn::MakeRecord {
+        start: r1,
+        count: 1,
+        dest: r2,
+    });
+    builder.add(Insn::ResultRow {
+        start: r2,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -4299,10 +5274,19 @@ fn test_finish_seek() {
     let r_result = builder.alloc_register();
 
     // Open ephemeral - FinishSeek completes any pending deferred seek
-    builder.add(Insn::OpenEphemeral { cursor, num_columns: 1 });
+    builder.add(Insn::OpenEphemeral {
+        cursor,
+        num_columns: 1,
+    });
     builder.add(Insn::FinishSeek { cursor });
-    builder.add(Insn::Integer { value: 42, dest: r_result });
-    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::Integer {
+        value: 42,
+        dest: r_result,
+    });
+    builder.add(Insn::ResultRow {
+        start: r_result,
+        count: 1,
+    });
     builder.add(Insn::Close { cursor });
     builder.add(Insn::Halt);
 
@@ -4326,9 +5310,19 @@ fn test_max_pgcnt() {
     let r1 = builder.alloc_register();
 
     // Get max page count (0 = query only)
-    builder.add(Insn::Transaction { db_num: 0, write: 0 });
-    builder.add(Insn::MaxPgcnt { db_num: 0, dest: r1, new_max: 0 });
-    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Transaction {
+        db_num: 0,
+        write: 0,
+    });
+    builder.add(Insn::MaxPgcnt {
+        db_num: 0,
+        dest: r1,
+        new_max: 0,
+    });
+    builder.add(Insn::ResultRow {
+        start: r1,
+        count: 1,
+    });
     builder.add(Insn::Halt);
 
     let mut program = builder.finish(1).expect("Failed to finish program");
@@ -4336,7 +5330,11 @@ fn test_max_pgcnt() {
     // Max page count can be a large value that overflows i32, use i64
     let max = program.column_int64(0);
     // The default max page count is typically very large (billions)
-    assert!(max >= 0, "Max page count should be non-negative, got {}", max);
+    assert!(
+        max >= 0,
+        "Max page count should be non-negative, got {}",
+        max
+    );
 }
 
 // ============================================================================
@@ -4359,16 +5357,31 @@ fn test_subtype_instructions_exist() {
 fn test_subtype_raw_opcodes() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::ClrSubtype { src: 1 }.raw_opcode(), RawOpcode::ClrSubtype as u8);
-    assert_eq!(Insn::GetSubtype { src: 1, dest: 2 }.raw_opcode(), RawOpcode::GetSubtype as u8);
-    assert_eq!(Insn::SetSubtype { src: 1, dest: 2 }.raw_opcode(), RawOpcode::SetSubtype as u8);
+    assert_eq!(
+        Insn::ClrSubtype { src: 1 }.raw_opcode(),
+        RawOpcode::ClrSubtype as u8
+    );
+    assert_eq!(
+        Insn::GetSubtype { src: 1, dest: 2 }.raw_opcode(),
+        RawOpcode::GetSubtype as u8
+    );
+    assert_eq!(
+        Insn::SetSubtype { src: 1, dest: 2 }.raw_opcode(),
+        RawOpcode::SetSubtype as u8
+    );
 }
 
 #[test]
 fn test_subtype_display() {
     assert_eq!(format!("{}", Insn::ClrSubtype { src: 1 }), "ClrSubtype");
-    assert_eq!(format!("{}", Insn::GetSubtype { src: 1, dest: 2 }), "GetSubtype");
-    assert_eq!(format!("{}", Insn::SetSubtype { src: 1, dest: 2 }), "SetSubtype");
+    assert_eq!(
+        format!("{}", Insn::GetSubtype { src: 1, dest: 2 }),
+        "GetSubtype"
+    );
+    assert_eq!(
+        format!("{}", Insn::SetSubtype { src: 1, dest: 2 }),
+        "SetSubtype"
+    );
 }
 
 #[test]
@@ -4409,14 +5422,23 @@ fn test_cursor_lock_instructions_exist() {
 fn test_cursor_lock_raw_opcodes() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::CursorLock { cursor: 0 }.raw_opcode(), RawOpcode::CursorLock as u8);
-    assert_eq!(Insn::CursorUnlock { cursor: 0 }.raw_opcode(), RawOpcode::CursorUnlock as u8);
+    assert_eq!(
+        Insn::CursorLock { cursor: 0 }.raw_opcode(),
+        RawOpcode::CursorLock as u8
+    );
+    assert_eq!(
+        Insn::CursorUnlock { cursor: 0 }.raw_opcode(),
+        RawOpcode::CursorUnlock as u8
+    );
 }
 
 #[test]
 fn test_cursor_lock_display() {
     assert_eq!(format!("{}", Insn::CursorLock { cursor: 0 }), "CursorLock");
-    assert_eq!(format!("{}", Insn::CursorUnlock { cursor: 0 }), "CursorUnlock");
+    assert_eq!(
+        format!("{}", Insn::CursorUnlock { cursor: 0 }),
+        "CursorUnlock"
+    );
 }
 
 // ============================================================================
@@ -4425,22 +5447,51 @@ fn test_cursor_lock_display() {
 
 #[test]
 fn test_expire_instruction_exists() {
-    let _ = Insn::Expire { current_only: 0, deferred: 0 };
-    let _ = Insn::Expire { current_only: 1, deferred: 1 };
+    let _ = Insn::Expire {
+        current_only: 0,
+        deferred: 0,
+    };
+    let _ = Insn::Expire {
+        current_only: 1,
+        deferred: 1,
+    };
 
-    assert_eq!(Insn::Expire { current_only: 0, deferred: 0 }.name(), "Expire");
+    assert_eq!(
+        Insn::Expire {
+            current_only: 0,
+            deferred: 0
+        }
+        .name(),
+        "Expire"
+    );
 }
 
 #[test]
 fn test_expire_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::Expire { current_only: 0, deferred: 0 }.raw_opcode(), RawOpcode::Expire as u8);
+    assert_eq!(
+        Insn::Expire {
+            current_only: 0,
+            deferred: 0
+        }
+        .raw_opcode(),
+        RawOpcode::Expire as u8
+    );
 }
 
 #[test]
 fn test_expire_display() {
-    assert_eq!(format!("{}", Insn::Expire { current_only: 0, deferred: 0 }), "Expire");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::Expire {
+                current_only: 0,
+                deferred: 0
+            }
+        ),
+        "Expire"
+    );
 }
 
 // ============================================================================
@@ -4471,20 +5522,46 @@ fn test_reset_count_display() {
 
 #[test]
 fn test_incr_vacuum_instruction_exists() {
-    let _ = Insn::IncrVacuum { db_num: 0, target: 5 };
-    assert_eq!(Insn::IncrVacuum { db_num: 0, target: 5 }.name(), "IncrVacuum");
+    let _ = Insn::IncrVacuum {
+        db_num: 0,
+        target: 5,
+    };
+    assert_eq!(
+        Insn::IncrVacuum {
+            db_num: 0,
+            target: 5
+        }
+        .name(),
+        "IncrVacuum"
+    );
 }
 
 #[test]
 fn test_incr_vacuum_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::IncrVacuum { db_num: 0, target: 5 }.raw_opcode(), RawOpcode::IncrVacuum as u8);
+    assert_eq!(
+        Insn::IncrVacuum {
+            db_num: 0,
+            target: 5
+        }
+        .raw_opcode(),
+        RawOpcode::IncrVacuum as u8
+    );
 }
 
 #[test]
 fn test_incr_vacuum_display() {
-    assert_eq!(format!("{}", Insn::IncrVacuum { db_num: 0, target: 5 }), "IncrVacuum");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::IncrVacuum {
+                db_num: 0,
+                target: 5
+            }
+        ),
+        "IncrVacuum"
+    );
 }
 
 // ============================================================================
@@ -4493,20 +5570,50 @@ fn test_incr_vacuum_display() {
 
 #[test]
 fn test_if_smaller_instruction_exists() {
-    let _ = Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 };
-    assert_eq!(Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }.name(), "IfSmaller");
+    let _ = Insn::IfSmaller {
+        cursor: 0,
+        target: 5,
+        threshold: 10,
+    };
+    assert_eq!(
+        Insn::IfSmaller {
+            cursor: 0,
+            target: 5,
+            threshold: 10
+        }
+        .name(),
+        "IfSmaller"
+    );
 }
 
 #[test]
 fn test_if_smaller_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }.raw_opcode(), RawOpcode::IfSmaller as u8);
+    assert_eq!(
+        Insn::IfSmaller {
+            cursor: 0,
+            target: 5,
+            threshold: 10
+        }
+        .raw_opcode(),
+        RawOpcode::IfSmaller as u8
+    );
 }
 
 #[test]
 fn test_if_smaller_display() {
-    assert_eq!(format!("{}", Insn::IfSmaller { cursor: 0, target: 5, threshold: 10 }), "IfSmaller");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::IfSmaller {
+                cursor: 0,
+                target: 5,
+                threshold: 10
+            }
+        ),
+        "IfSmaller"
+    );
 }
 
 // ============================================================================
@@ -4553,7 +5660,10 @@ fn test_mem_max_instruction_exists() {
 fn test_mem_max_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::MemMax { accum: 1, value: 2 }.raw_opcode(), RawOpcode::MemMax as u8);
+    assert_eq!(
+        Insn::MemMax { accum: 1, value: 2 }.raw_opcode(),
+        RawOpcode::MemMax as u8
+    );
 }
 
 #[test]
@@ -4567,20 +5677,50 @@ fn test_mem_max_display() {
 
 #[test]
 fn test_offset_limit_instruction_exists() {
-    let _ = Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 };
-    assert_eq!(Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }.name(), "OffsetLimit");
+    let _ = Insn::OffsetLimit {
+        limit: 1,
+        dest: 2,
+        offset: 3,
+    };
+    assert_eq!(
+        Insn::OffsetLimit {
+            limit: 1,
+            dest: 2,
+            offset: 3
+        }
+        .name(),
+        "OffsetLimit"
+    );
 }
 
 #[test]
 fn test_offset_limit_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }.raw_opcode(), RawOpcode::OffsetLimit as u8);
+    assert_eq!(
+        Insn::OffsetLimit {
+            limit: 1,
+            dest: 2,
+            offset: 3
+        }
+        .raw_opcode(),
+        RawOpcode::OffsetLimit as u8
+    );
 }
 
 #[test]
 fn test_offset_limit_display() {
-    assert_eq!(format!("{}", Insn::OffsetLimit { limit: 1, dest: 2, offset: 3 }), "OffsetLimit");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::OffsetLimit {
+                limit: 1,
+                dest: 2,
+                offset: 3
+            }
+        ),
+        "OffsetLimit"
+    );
 }
 
 // ============================================================================
@@ -4589,20 +5729,54 @@ fn test_offset_limit_display() {
 
 #[test]
 fn test_release_reg_instruction_exists() {
-    let _ = Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 };
-    assert_eq!(Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }.name(), "ReleaseReg");
+    let _ = Insn::ReleaseReg {
+        start: 1,
+        count: 5,
+        mask: 0,
+        flags: 0,
+    };
+    assert_eq!(
+        Insn::ReleaseReg {
+            start: 1,
+            count: 5,
+            mask: 0,
+            flags: 0
+        }
+        .name(),
+        "ReleaseReg"
+    );
 }
 
 #[test]
 fn test_release_reg_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }.raw_opcode(), RawOpcode::ReleaseReg as u8);
+    assert_eq!(
+        Insn::ReleaseReg {
+            start: 1,
+            count: 5,
+            mask: 0,
+            flags: 0
+        }
+        .raw_opcode(),
+        RawOpcode::ReleaseReg as u8
+    );
 }
 
 #[test]
 fn test_release_reg_display() {
-    assert_eq!(format!("{}", Insn::ReleaseReg { start: 1, count: 5, mask: 0, flags: 0 }), "ReleaseReg");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::ReleaseReg {
+                start: 1,
+                count: 5,
+                mask: 0,
+                flags: 0
+            }
+        ),
+        "ReleaseReg"
+    );
 }
 
 // ============================================================================
@@ -4611,29 +5785,119 @@ fn test_release_reg_display() {
 
 #[test]
 fn test_rowset_instructions_exist() {
-    let _ = Insn::RowSetAdd { rowset: 1, value: 2 };
-    let _ = Insn::RowSetRead { rowset: 1, target: 5, dest: 3 };
-    let _ = Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 };
+    let _ = Insn::RowSetAdd {
+        rowset: 1,
+        value: 2,
+    };
+    let _ = Insn::RowSetRead {
+        rowset: 1,
+        target: 5,
+        dest: 3,
+    };
+    let _ = Insn::RowSetTest {
+        rowset: 1,
+        target: 5,
+        value: 3,
+        set_num: 0,
+    };
 
-    assert_eq!(Insn::RowSetAdd { rowset: 1, value: 2 }.name(), "RowSetAdd");
-    assert_eq!(Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }.name(), "RowSetRead");
-    assert_eq!(Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }.name(), "RowSetTest");
+    assert_eq!(
+        Insn::RowSetAdd {
+            rowset: 1,
+            value: 2
+        }
+        .name(),
+        "RowSetAdd"
+    );
+    assert_eq!(
+        Insn::RowSetRead {
+            rowset: 1,
+            target: 5,
+            dest: 3
+        }
+        .name(),
+        "RowSetRead"
+    );
+    assert_eq!(
+        Insn::RowSetTest {
+            rowset: 1,
+            target: 5,
+            value: 3,
+            set_num: 0
+        }
+        .name(),
+        "RowSetTest"
+    );
 }
 
 #[test]
 fn test_rowset_raw_opcodes() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::RowSetAdd { rowset: 1, value: 2 }.raw_opcode(), RawOpcode::RowSetAdd as u8);
-    assert_eq!(Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }.raw_opcode(), RawOpcode::RowSetRead as u8);
-    assert_eq!(Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }.raw_opcode(), RawOpcode::RowSetTest as u8);
+    assert_eq!(
+        Insn::RowSetAdd {
+            rowset: 1,
+            value: 2
+        }
+        .raw_opcode(),
+        RawOpcode::RowSetAdd as u8
+    );
+    assert_eq!(
+        Insn::RowSetRead {
+            rowset: 1,
+            target: 5,
+            dest: 3
+        }
+        .raw_opcode(),
+        RawOpcode::RowSetRead as u8
+    );
+    assert_eq!(
+        Insn::RowSetTest {
+            rowset: 1,
+            target: 5,
+            value: 3,
+            set_num: 0
+        }
+        .raw_opcode(),
+        RawOpcode::RowSetTest as u8
+    );
 }
 
 #[test]
 fn test_rowset_display() {
-    assert_eq!(format!("{}", Insn::RowSetAdd { rowset: 1, value: 2 }), "RowSetAdd");
-    assert_eq!(format!("{}", Insn::RowSetRead { rowset: 1, target: 5, dest: 3 }), "RowSetRead");
-    assert_eq!(format!("{}", Insn::RowSetTest { rowset: 1, target: 5, value: 3, set_num: 0 }), "RowSetTest");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::RowSetAdd {
+                rowset: 1,
+                value: 2
+            }
+        ),
+        "RowSetAdd"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::RowSetRead {
+                rowset: 1,
+                target: 5,
+                dest: 3
+            }
+        ),
+        "RowSetRead"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::RowSetTest {
+                rowset: 1,
+                target: 5,
+                value: 3,
+                set_num: 0
+            }
+        ),
+        "RowSetTest"
+    );
 }
 
 // ============================================================================
@@ -4642,25 +5906,89 @@ fn test_rowset_display() {
 
 #[test]
 fn test_filter_instructions_exist() {
-    let _ = Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 };
-    let _ = Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 };
+    let _ = Insn::FilterAdd {
+        filter: 1,
+        key_start: 2,
+        key_count: 3,
+    };
+    let _ = Insn::Filter {
+        filter: 1,
+        target: 5,
+        key_start: 2,
+        key_count: 3,
+    };
 
-    assert_eq!(Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }.name(), "FilterAdd");
-    assert_eq!(Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }.name(), "Filter");
+    assert_eq!(
+        Insn::FilterAdd {
+            filter: 1,
+            key_start: 2,
+            key_count: 3
+        }
+        .name(),
+        "FilterAdd"
+    );
+    assert_eq!(
+        Insn::Filter {
+            filter: 1,
+            target: 5,
+            key_start: 2,
+            key_count: 3
+        }
+        .name(),
+        "Filter"
+    );
 }
 
 #[test]
 fn test_filter_raw_opcodes() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }.raw_opcode(), RawOpcode::FilterAdd as u8);
-    assert_eq!(Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }.raw_opcode(), RawOpcode::Filter as u8);
+    assert_eq!(
+        Insn::FilterAdd {
+            filter: 1,
+            key_start: 2,
+            key_count: 3
+        }
+        .raw_opcode(),
+        RawOpcode::FilterAdd as u8
+    );
+    assert_eq!(
+        Insn::Filter {
+            filter: 1,
+            target: 5,
+            key_start: 2,
+            key_count: 3
+        }
+        .raw_opcode(),
+        RawOpcode::Filter as u8
+    );
 }
 
 #[test]
 fn test_filter_display() {
-    assert_eq!(format!("{}", Insn::FilterAdd { filter: 1, key_start: 2, key_count: 3 }), "FilterAdd");
-    assert_eq!(format!("{}", Insn::Filter { filter: 1, target: 5, key_start: 2, key_count: 3 }), "Filter");
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::FilterAdd {
+                filter: 1,
+                key_start: 2,
+                key_count: 3
+            }
+        ),
+        "FilterAdd"
+    );
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::Filter {
+                filter: 1,
+                target: 5,
+                key_start: 2,
+                key_count: 3
+            }
+        ),
+        "Filter"
+    );
 }
 
 // ============================================================================
@@ -4677,7 +6005,10 @@ fn test_else_eq_instruction_exists() {
 fn test_else_eq_raw_opcode() {
     use sqlite_vdbe::RawOpcode;
 
-    assert_eq!(Insn::ElseEq { target: 5 }.raw_opcode(), RawOpcode::ElseEq as u8);
+    assert_eq!(
+        Insn::ElseEq { target: 5 }.raw_opcode(),
+        RawOpcode::ElseEq as u8
+    );
 }
 
 #[test]

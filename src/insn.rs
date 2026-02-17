@@ -1370,13 +1370,13 @@ pub enum Insn {
     /// The meaning of P5 depends on whether or not the SQLITE_ENABLE_NULL_TRIM
     /// compile-time option is enabled:
     ///
-    /// - If SQLITE_ENABLE_NULL_TRIM is enabled, then the P5 is the index of the
+    /// * If SQLITE_ENABLE_NULL_TRIM is enabled, then the P5 is the index of the
     ///   right-most table that can be null-trimmed.
     ///
-    /// - If SQLITE_ENABLE_NULL_TRIM is omitted, then P5 has the value
+    /// * If SQLITE_ENABLE_NULL_TRIM is omitted, then P5 has the value
     ///   OPFLAG_NOCHNG_MAGIC if the MakeRecord opcode is allowed to accept
-    ///   no-change records with serial_type 10. This value is only used inside an
-    ///   assert() and does not affect the end result.
+    ///   no-change records with serial_type 10. This value is only used
+    ///   inside an assert() and does not affect the end result.
     MakeRecord {
         /// First register of data
         start: i32,
@@ -1648,7 +1648,6 @@ pub enum Insn {
     // =========================================================================
     // Logical Operations
     // =========================================================================
-
     /// Take the logical AND of the values in registers P1 and P2 and write the
     /// result into register P3.
     ///
@@ -1681,7 +1680,6 @@ pub enum Insn {
     // =========================================================================
     // Type Operations
     // =========================================================================
-
     /// Force the value in register P1 to be the type defined by P2.
     ///
     /// P2 values: 'A' = BLOB, 'B' = TEXT, 'C' = NUMERIC, 'D' = INTEGER,
@@ -1753,7 +1751,6 @@ pub enum Insn {
     // =========================================================================
     // Blob and String Operations
     // =========================================================================
-
     /// P4 points to a blob of data P1 bytes long. Store this blob in register
     /// P2.
     Blob {
@@ -1787,7 +1784,6 @@ pub enum Insn {
     // =========================================================================
     // Null Operations
     // =========================================================================
-
     /// Set register P1 to have the value NULL as seen by the MakeRecord
     /// instruction, but do not free any string or blob memory associated with
     /// the register, so that if the value was a string or blob that was
@@ -1821,7 +1817,6 @@ pub enum Insn {
     // =========================================================================
     // Subroutine Operations
     // =========================================================================
-
     /// Mark the beginning of a subroutine that can be entered in-line or that
     /// can be called using Gosub.
     ///
@@ -1837,7 +1832,6 @@ pub enum Insn {
     // =========================================================================
     // Seek and Search Operations
     // =========================================================================
-
     /// If P4==0 then register P3 holds a blob constructed by MakeRecord. If
     /// P4>0 then register P3 is the first of P4 registers that form an
     /// unpacked record.
@@ -1943,7 +1937,6 @@ pub enum Insn {
     // =========================================================================
     // Index Comparison Operations
     // =========================================================================
-
     /// The P4 register values beginning with P3 form an unpacked index key that
     /// omits the PRIMARY KEY. Compare this key value against the index that P1
     /// is currently pointing to, ignoring the PRIMARY KEY.
@@ -2015,7 +2008,6 @@ pub enum Insn {
     // =========================================================================
     // Advanced Cursor Operations
     // =========================================================================
-
     /// Return in register P2 the next available pseudo-rowid for cursor P1.
     Sequence {
         /// Cursor number
@@ -2136,7 +2128,6 @@ pub enum Insn {
     // =========================================================================
     // Sorter Operations
     // =========================================================================
-
     /// Open a new sorter cursor on a transient index.
     SorterOpen {
         /// Cursor number
@@ -2211,7 +2202,6 @@ pub enum Insn {
     // =========================================================================
     // Foreign Key Operations
     // =========================================================================
-
     /// Invoke the foreign key check and return an error if there are any
     /// outstanding foreign key constraint violations.
     FkCheck,
@@ -2244,7 +2234,6 @@ pub enum Insn {
     // =========================================================================
     // Transaction and Savepoint Operations
     // =========================================================================
-
     /// Begin a transaction on database P1 if a transaction is not already
     /// active. If P2 is non-zero, then a write-transaction is started.
     Transaction {
@@ -2300,7 +2289,6 @@ pub enum Insn {
     // =========================================================================
     // Database Schema Operations
     // =========================================================================
-
     /// Allocate a new table in the main database if P1==0 or in the auxiliary
     /// database if P1==1 or in the temp database if P1==2.
     CreateBtree {
@@ -2369,7 +2357,6 @@ pub enum Insn {
     // =========================================================================
     // Cookie Operations
     // =========================================================================
-
     /// Read cookie number P3 from database P1 and write it into register P2.
     ReadCookie {
         /// Database index
@@ -2393,7 +2380,6 @@ pub enum Insn {
     // =========================================================================
     // Count and Statistics Operations
     // =========================================================================
-
     /// Store the number of entries (an integer value) in the table or index
     /// opened by cursor P1 in register P2.
     Count {
@@ -2433,7 +2419,6 @@ pub enum Insn {
     // =========================================================================
     // Virtual Table Operations
     // =========================================================================
-
     /// Call the xBegin method for a virtual table.
     ///
     /// P4 may be a pointer to an sqlite3_vtab structure. If so, call the
@@ -2856,8 +2841,8 @@ pub enum Insn {
     // =========================================================================
     /// Add a key to a bloom filter.
     ///
-    /// Compute a hash on the P4 registers starting with r[P3] and add that
-    /// hash to the bloom filter contained in r[P1].
+    /// Compute a hash on the P4 registers starting with r\[P3\] and add that
+    /// hash to the bloom filter contained in r\[P1\].
     FilterAdd {
         /// Bloom filter register
         filter: i32,
@@ -2869,7 +2854,7 @@ pub enum Insn {
 
     /// Check if a key might be in a bloom filter.
     ///
-    /// Compute a hash on the key in the P4 registers starting with r[P3].
+    /// Compute a hash on the key in the P4 registers starting with r\[P3\].
     /// Check if that hash is in the bloom filter in P1. If not present,
     /// jump to P2. Otherwise fall through.
     ///
@@ -3357,11 +3342,28 @@ impl Insn {
                 num_args,
                 ..
             } => (*args, 0, *accum, *num_args as u16),
-            Insn::AggStep1 { is_inverse, args, accum, num_args } => (*is_inverse, *args, *accum, *num_args),
+            Insn::AggStep1 {
+                is_inverse,
+                args,
+                accum,
+                num_args,
+            } => (*is_inverse, *args, *accum, *num_args),
             Insn::AggValue { num_args, dest } => (0, *num_args, *dest, 0),
-            Insn::AggInverse { args, accum, num_args } => (0, *args, *accum, *num_args),
-            Insn::Function { const_mask, args, dest } => (*const_mask, *args, *dest, 0),
-            Insn::PureFunc { const_mask, args, dest } => (*const_mask, *args, *dest, 0),
+            Insn::AggInverse {
+                args,
+                accum,
+                num_args,
+            } => (0, *args, *accum, *num_args),
+            Insn::Function {
+                const_mask,
+                args,
+                dest,
+            } => (*const_mask, *args, *dest, 0),
+            Insn::PureFunc {
+                const_mask,
+                args,
+                dest,
+            } => (*const_mask, *args, *dest, 0),
             Insn::AggFinal { accum, num_args } => (*accum, *num_args, 0, 0),
 
             // Logical
@@ -3373,94 +3375,218 @@ impl Insn {
             Insn::Affinity { start, count } => (*start, *count, 0, 0),
             Insn::RealAffinity { src } => (*src, 0, 0, 0),
             Insn::TypeCheck { src, type_mask } => (*src, 0, 0, *type_mask),
-            Insn::IsType { cursor, target, column, type_mask } => (*cursor, *target, *column, *type_mask),
-            Insn::IsTrue { src, dest, null_value } => (*src, *dest, *null_value, 0),
+            Insn::IsType {
+                cursor,
+                target,
+                column,
+                type_mask,
+            } => (*cursor, *target, *column, *type_mask),
+            Insn::IsTrue {
+                src,
+                dest,
+                null_value,
+            } => (*src, *dest, *null_value, 0),
 
             // Blob/String
             Insn::Blob { len, dest } => (*len, *dest, 0, 0),
-            Insn::String { len, dest, blob_reg } => (*len, *dest, *blob_reg, 0),
+            Insn::String {
+                len,
+                dest,
+                blob_reg,
+            } => (*len, *dest, *blob_reg, 0),
             Insn::Variable { param, dest } => (*param, *dest, 0, 0),
 
             // Null operations
             Insn::SoftNull { dest } => (*dest, 0, 0, 0),
-            Insn::ZeroOrNull { src, dest, null_check } => (*src, *dest, *null_check, 0),
+            Insn::ZeroOrNull {
+                src,
+                dest,
+                null_check,
+            } => (*src, *dest, *null_check, 0),
             Insn::NullRow { cursor } => (*cursor, 0, 0, 0),
 
             // Subroutines
             Insn::BeginSubrtn { return_reg, target } => (*return_reg, *target, 0, 0),
 
             // Seek/Search
-            Insn::Found { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::NotFound { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::NotExists { cursor, target, rowid } => (*cursor, *target, *rowid, 0),
-            Insn::NoConflict { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::IfNoHope { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::Found {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::NotFound {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::NotExists {
+                cursor,
+                target,
+                rowid,
+            } => (*cursor, *target, *rowid, 0),
+            Insn::NoConflict {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IfNoHope {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
             Insn::IfNotOpen { cursor, target } => (*cursor, *target, 0, 0),
-            Insn::IfNullRow { cursor, target, dest } => (*cursor, *target, *dest, 0),
+            Insn::IfNullRow {
+                cursor,
+                target,
+                dest,
+            } => (*cursor, *target, *dest, 0),
 
             // Index comparisons
-            Insn::IdxGE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::IdxGT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::IdxLE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
-            Insn::IdxLT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxGE {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxGT {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxLE {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxLT {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
 
             // Advanced cursor
             Insn::Sequence { cursor, dest } => (*cursor, *dest, 0, 0),
             Insn::SequenceTest { cursor, target } => (*cursor, *target, 0, 0),
             Insn::RowData { cursor, dest } => (*cursor, *dest, 0, 0),
-            Insn::DeferredSeek { cursor, target, table_cursor } => (*cursor, *target, *table_cursor, 0),
+            Insn::DeferredSeek {
+                cursor,
+                target,
+                table_cursor,
+            } => (*cursor, *target, *table_cursor, 0),
             Insn::FinishSeek { cursor } => (*cursor, 0, 0, 0),
             Insn::SeekEnd { cursor } => (*cursor, 0, 0, 0),
-            Insn::SeekHit { cursor, adjustment, low } => (*cursor, *adjustment, *low, 0),
+            Insn::SeekHit {
+                cursor,
+                adjustment,
+                low,
+            } => (*cursor, *adjustment, *low, 0),
             Insn::SeekScan { cursor, target } => (*cursor, *target, 0, 0),
             Insn::ColumnsUsed { cursor } => (*cursor, 0, 0, 0),
-            Insn::OpenDup { cursor, orig_cursor } => (*cursor, *orig_cursor, 0, 0),
-            Insn::OpenAutoindex { cursor, num_columns } => (*cursor, *num_columns, 0, 0),
-            Insn::OpenPseudo { cursor, content, num_columns } => (*cursor, *content, *num_columns, 0),
+            Insn::OpenDup {
+                cursor,
+                orig_cursor,
+            } => (*cursor, *orig_cursor, 0, 0),
+            Insn::OpenAutoindex {
+                cursor,
+                num_columns,
+            } => (*cursor, *num_columns, 0, 0),
+            Insn::OpenPseudo {
+                cursor,
+                content,
+                num_columns,
+            } => (*cursor, *content, *num_columns, 0),
             Insn::RowCell { cursor, dest } => (*cursor, *dest, 0, 0),
 
             // Sorter
-            Insn::SorterOpen { cursor, num_columns } => (*cursor, *num_columns, 0, 0),
+            Insn::SorterOpen {
+                cursor,
+                num_columns,
+            } => (*cursor, *num_columns, 0, 0),
             Insn::SorterSort { cursor, target } => (*cursor, *target, 0, 0),
             Insn::Sort { cursor, target } => (*cursor, *target, 0, 0),
             Insn::SorterNext { cursor, target } => (*cursor, *target, 0, 0),
             Insn::SorterData { cursor, dest } => (*cursor, *dest, 0, 0),
             Insn::SorterInsert { cursor, key } => (*cursor, *key, 0, 0),
-            Insn::SorterCompare { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::SorterCompare {
+                cursor,
+                target,
+                key,
+                num_fields,
+            } => (*cursor, *target, *key, *num_fields as u16),
             Insn::ResetSorter { cursor } => (*cursor, 0, 0, 0),
 
             // Foreign keys
             Insn::FkCheck => (0, 0, 0, 0),
-            Insn::FkCounter { counter_type, amount } => (*counter_type, *amount, 0, 0),
-            Insn::FkIfZero { counter_type, target } => (*counter_type, *target, 0, 0),
+            Insn::FkCounter {
+                counter_type,
+                amount,
+            } => (*counter_type, *amount, 0, 0),
+            Insn::FkIfZero {
+                counter_type,
+                target,
+            } => (*counter_type, *target, 0, 0),
 
             // Transactions
             Insn::Transaction { db_num, write } => (*db_num, *write, 0, 0),
             Insn::Savepoint { operation } => (*operation, 0, 0, 0),
-            Insn::AutoCommit { auto_commit, rollback } => (*auto_commit, *rollback, 0, 0),
+            Insn::AutoCommit {
+                auto_commit,
+                rollback,
+            } => (*auto_commit, *rollback, 0, 0),
             Insn::Checkpoint { db_num, mode } => (*db_num, *mode, 0, 0),
-            Insn::JournalMode { db_num, target, dest } => (*db_num, *target, *dest, 0),
+            Insn::JournalMode {
+                db_num,
+                target,
+                dest,
+            } => (*db_num, *target, *dest, 0),
             Insn::Vacuum { db_num } => (*db_num, 0, 0, 0),
 
             // Schema
-            Insn::CreateBtree { db_num, dest, flags } => (*db_num, *dest, *flags, 0),
+            Insn::CreateBtree {
+                db_num,
+                dest,
+                flags,
+            } => (*db_num, *dest, *flags, 0),
             Insn::SqlExec { db_num } => (*db_num, 0, 0, 0),
             Insn::ParseSchema { db_num } => (*db_num, 0, 0, 0),
             Insn::LoadAnalysis { db_num } => (*db_num, 0, 0, 0),
             Insn::Destroy { root_page, db_num } => (*root_page, *db_num, 0, 0),
-            Insn::Clear { root_page, db_num, reset_rowid } => (*root_page, *db_num, *reset_rowid, 0),
+            Insn::Clear {
+                root_page,
+                db_num,
+                reset_rowid,
+            } => (*root_page, *db_num, *reset_rowid, 0),
             Insn::DropTable { db_num } => (*db_num, 0, 0, 0),
             Insn::DropIndex { db_num } => (*db_num, 0, 0, 0),
             Insn::DropTrigger { db_num } => (*db_num, 0, 0, 0),
 
             // Cookies
-            Insn::ReadCookie { db_num, dest, cookie } => (*db_num, *dest, *cookie, 0),
-            Insn::SetCookie { db_num, cookie, value } => (*db_num, *cookie, *value, 0),
+            Insn::ReadCookie {
+                db_num,
+                dest,
+                cookie,
+            } => (*db_num, *dest, *cookie, 0),
+            Insn::SetCookie {
+                db_num,
+                cookie,
+                value,
+            } => (*db_num, *cookie, *value, 0),
 
             // Statistics
             Insn::Count { cursor, dest } => (*cursor, *dest, 0, 0),
             Insn::Offset { cursor, dest } => (*cursor, *dest, 0, 0),
-            Insn::MaxPgcnt { db_num, dest, new_max } => (*db_num, *dest, *new_max, 0),
+            Insn::MaxPgcnt {
+                db_num,
+                dest,
+                new_max,
+            } => (*db_num, *dest, *new_max, 0),
             Insn::Pagecount { db_num, dest } => (*db_num, *dest, 0, 0),
 
             // Virtual tables
@@ -3469,12 +3595,30 @@ impl Insn {
             Insn::VDestroy { db_num } => (*db_num, 0, 0, 0),
             Insn::VOpen { cursor } => (*cursor, 0, 0, 0),
             Insn::VCheck { schema, dest, arg } => (*schema, *dest, *arg, 0),
-            Insn::VInitIn { cursor, dest, cache_reg } => (*cursor, *dest, *cache_reg, 0),
-            Insn::VFilter { cursor, target, args_reg } => (*cursor, *target, *args_reg, 0),
-            Insn::VColumn { cursor, column, dest, flags } => (*cursor, *column, *dest, *flags),
+            Insn::VInitIn {
+                cursor,
+                dest,
+                cache_reg,
+            } => (*cursor, *dest, *cache_reg, 0),
+            Insn::VFilter {
+                cursor,
+                target,
+                args_reg,
+            } => (*cursor, *target, *args_reg, 0),
+            Insn::VColumn {
+                cursor,
+                column,
+                dest,
+                flags,
+            } => (*cursor, *column, *dest, *flags),
             Insn::VNext { cursor, target } => (*cursor, *target, 0, 0),
             Insn::VRename { name_reg } => (*name_reg, 0, 0, 0),
-            Insn::VUpdate { update_rowid, argc, args_reg, on_error } => (*update_rowid, *argc, *args_reg, *on_error),
+            Insn::VUpdate {
+                update_rowid,
+                argc,
+                args_reg,
+                on_error,
+            } => (*update_rowid, *argc, *args_reg, *on_error),
 
             // Misc
             Insn::Noop => (0, 0, 0, 0),
@@ -3490,14 +3634,21 @@ impl Insn {
             Insn::CursorUnlock { cursor } => (*cursor, 0, 0, 0),
 
             // Statement control
-            Insn::Expire { current_only, deferred } => (*current_only, *deferred, 0, 0),
+            Insn::Expire {
+                current_only,
+                deferred,
+            } => (*current_only, *deferred, 0, 0),
             Insn::ResetCount => (0, 0, 0, 0),
 
             // Vacuum
             Insn::IncrVacuum { db_num, target } => (*db_num, *target, 0, 0),
 
             // Size estimation
-            Insn::IfSmaller { cursor, target, threshold } => (*cursor, *target, *threshold, 0),
+            Insn::IfSmaller {
+                cursor,
+                target,
+                threshold,
+            } => (*cursor, *target, *threshold, 0),
 
             // Debug/tracing
             Insn::Abortable => (0, 0, 0, 0),
@@ -3505,17 +3656,44 @@ impl Insn {
 
             // Memory operations
             Insn::MemMax { accum, value } => (*accum, *value, 0, 0),
-            Insn::OffsetLimit { limit, dest, offset } => (*limit, *dest, *offset, 0),
-            Insn::ReleaseReg { start, count, mask, flags } => (*start, *count, *mask, *flags),
+            Insn::OffsetLimit {
+                limit,
+                dest,
+                offset,
+            } => (*limit, *dest, *offset, 0),
+            Insn::ReleaseReg {
+                start,
+                count,
+                mask,
+                flags,
+            } => (*start, *count, *mask, *flags),
 
             // RowSet operations
             Insn::RowSetAdd { rowset, value } => (*rowset, *value, 0, 0),
-            Insn::RowSetRead { rowset, target, dest } => (*rowset, *target, *dest, 0),
-            Insn::RowSetTest { rowset, target, value, set_num } => (*rowset, *target, *value, *set_num as u16),
+            Insn::RowSetRead {
+                rowset,
+                target,
+                dest,
+            } => (*rowset, *target, *dest, 0),
+            Insn::RowSetTest {
+                rowset,
+                target,
+                value,
+                set_num,
+            } => (*rowset, *target, *value, *set_num as u16),
 
             // Bloom filter operations
-            Insn::FilterAdd { filter, key_start, key_count } => (*filter, 0, *key_start, *key_count as u16),
-            Insn::Filter { filter, target, key_start, key_count } => (*filter, *target, *key_start, *key_count as u16),
+            Insn::FilterAdd {
+                filter,
+                key_start,
+                key_count,
+            } => (*filter, 0, *key_start, *key_count as u16),
+            Insn::Filter {
+                filter,
+                target,
+                key_start,
+                key_count,
+            } => (*filter, *target, *key_start, *key_count as u16),
 
             // Comparison
             Insn::ElseEq { target } => (0, *target, 0, 0),
