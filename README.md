@@ -15,7 +15,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sqlite-vdbe = "0.1"
+sqlite-vdbe = "0.0.1"
 ```
 
 The crate automatically downloads and compiles SQLite during build.
