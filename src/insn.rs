@@ -196,6 +196,7 @@ pub enum RawOpcode {
     IntegrityCk = 155,
     RowSetAdd = 156,
     Param = 157,
+    FkCounter = 158,
     MemMax = 159,
     OffsetLimit = 160,
     AggInverse = 161,

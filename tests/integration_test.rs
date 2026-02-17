@@ -2971,3 +2971,93 @@ fn test_self_referential_computation() {
     assert_eq!(program.step().unwrap(), StepResult::Row);
     assert_eq!(program.column_int(0), 32);
 }
+
+// ============================================================================
+// Raw Opcode Tests
+// ============================================================================
+
+/// Test FkCounter opcode (foreign key constraint counter)
+/// FkCounter increments/decrements an internal constraint counter
+/// P1=0 means statement counter, P1!=0 means database counter
+/// P2 is the amount to add (can be negative)
+#[test]
+fn test_fk_counter_opcode() {
+    use sqlite_vdbe::{Insn, RawOpcode, P4};
+
+    let mut conn = Connection::open_in_memory().expect("Failed to open connection");
+    let mut builder = conn.new_program().expect("Failed to create program");
+
+    let r1 = builder.alloc_register();
+
+    // Use FkCounter to increment statement counter (P1=0) by 5 (P2=5)
+    // This is an internal opcode that modifies SQLite's constraint tracking
+    builder.add(Insn::Raw {
+        opcode: RawOpcode::FkCounter,
+        p1: 0,  // statement counter
+        p2: 5,  // increment by 5
+        p3: 0,
+        p4: P4::None,
+        p5: 0,
+    });
+
+    // Decrement by 5 to reset
+    builder.add(Insn::Raw {
+        opcode: RawOpcode::FkCounter,
+        p1: 0,
+        p2: -5, // decrement by 5
+        p3: 0,
+        p4: P4::None,
+        p5: 0,
+    });
+
+    // Output a result to verify program executed
+    builder.add(Insn::Integer { value: 42, dest: r1 });
+    builder.add(Insn::ResultRow { start: r1, count: 1 });
+    builder.add(Insn::Halt);
+
+    let mut program = builder.finish(1).expect("Failed to finish program");
+
+    assert_eq!(program.step().unwrap(), StepResult::Row);
+    assert_eq!(program.column_int(0), 42);
+}
+
+/// Test FkIfZero opcode (jump if foreign key counter is zero)
+/// Combined with FkCounter to test the counter logic
+#[test]
+fn test_fk_if_zero_opcode() {
+    use sqlite_vdbe::{Insn, RawOpcode, P4};
+
+    let mut conn = Connection::open_in_memory().expect("Failed to open connection");
+    let mut builder = conn.new_program().expect("Failed to create program");
+
+    let r_result = builder.alloc_register();
+
+    // Initialize result to 0
+    builder.add(Insn::Integer { value: 0, dest: r_result });
+
+    // Statement counter starts at 0, so FkIfZero should jump
+    let fk_check = builder.add(Insn::Raw {
+        opcode: RawOpcode::FkIfZero,
+        p1: 0,  // check statement counter
+        p2: 0,  // jump target (will be patched)
+        p3: 0,
+        p4: P4::None,
+        p5: 0,
+    });
+
+    // This should be skipped (counter is 0)
+    builder.add(Insn::Integer { value: 99, dest: r_result });
+
+    // Jump lands here
+    builder.jump_here(fk_check);
+    builder.add(Insn::Integer { value: 1, dest: r_result });
+
+    builder.add(Insn::ResultRow { start: r_result, count: 1 });
+    builder.add(Insn::Halt);
+
+    let mut program = builder.finish(1).expect("Failed to finish program");
+
+    assert_eq!(program.step().unwrap(), StepResult::Row);
+    // Should be 1, meaning the FkIfZero jumped (counter was 0)
+    assert_eq!(program.column_int(0), 1);
+}
