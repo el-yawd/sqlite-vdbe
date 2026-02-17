@@ -1553,6 +1553,98 @@ pub enum Insn {
         num_args: i32,
     },
 
+    /// Execute the xStep (if P1==0) or xInverse (if P1!=0) function for an
+    /// aggregate. The function has P5 arguments. P4 is a pointer to the
+    /// FuncDef structure that specifies the function. Register P3 is the
+    /// accumulator.
+    ///
+    /// The P5 arguments are taken from register P2 and its successors.
+    ///
+    /// This opcode is initially coded as OP_AggStep0. On first evaluation,
+    /// the FuncDef stored in P4 is converted into an sqlite3_context and
+    /// the opcode is changed. In this way, the initialization of the
+    /// sqlite3_context only happens once, instead of on each call to the
+    /// step function.
+    AggStep1 {
+        /// 0 for xStep, non-zero for xInverse
+        is_inverse: i32,
+        /// First argument register
+        args: i32,
+        /// Accumulator register
+        accum: i32,
+        /// Number of arguments
+        num_args: u16,
+    },
+
+    /// Invoke the xValue() function and store the result in register P3.
+    ///
+    /// P2 is the number of arguments that the step function takes and
+    /// P4 is a pointer to the FuncDef for this function. The P2 argument
+    /// is not used by this opcode. It is only there to disambiguate functions
+    /// that can take varying numbers of arguments. The P4 argument is only
+    /// needed for the case where the step function was not previously called.
+    AggValue {
+        /// Number of arguments (unused, for disambiguation)
+        num_args: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Execute the xInverse function for an aggregate.
+    /// The function has P5 arguments. P4 is a pointer to the
+    /// FuncDef structure that specifies the function. Register P3 is the
+    /// accumulator.
+    ///
+    /// The P5 arguments are taken from register P2 and its successors.
+    AggInverse {
+        /// First argument register
+        args: i32,
+        /// Accumulator register
+        accum: i32,
+        /// Number of arguments
+        num_args: u16,
+    },
+
+    /// Invoke a user function (P4 is a pointer to an sqlite3_context object that
+    /// contains a pointer to the function to be run) with arguments taken
+    /// from register P2 and successors. The number of arguments is in
+    /// the sqlite3_context object that P4 points to.
+    /// The result of the function is stored in register P3.
+    /// Register P3 must not be one of the function inputs.
+    ///
+    /// P1 is a 32-bit bitmask indicating whether or not each argument to the
+    /// function was determined to be constant at compile time. If the first
+    /// argument was constant then bit 0 of P1 is set. This is used to determine
+    /// whether meta data associated with a user function argument using the
+    /// sqlite3_set_auxdata() API may be safely retained until the next
+    /// invocation of this opcode.
+    Function {
+        /// Constant argument bitmask
+        const_mask: i32,
+        /// First argument register
+        args: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Invoke a pure user function (no side effects).
+    ///
+    /// Same as Function but for pure functions. P4 is a pointer to an
+    /// sqlite3_context object that contains a pointer to the function to be run.
+    /// Arguments are taken from register P2 and successors.
+    /// The result is stored in register P3.
+    ///
+    /// P1 is a 32-bit bitmask indicating whether or not each argument to the
+    /// function was determined to be constant at compile time.
+    PureFunc {
+        /// Constant argument bitmask
+        const_mask: i32,
+        /// First argument register
+        args: i32,
+        /// Destination register
+        dest: i32,
+    },
+
     // =========================================================================
     // Logical Operations
     // =========================================================================
@@ -2339,6 +2431,181 @@ pub enum Insn {
     },
 
     // =========================================================================
+    // Virtual Table Operations
+    // =========================================================================
+
+    /// Call the xBegin method for a virtual table.
+    ///
+    /// P4 may be a pointer to an sqlite3_vtab structure. If so, call the
+    /// xBegin method for that table. Also, whether or not P4 is set, check
+    /// that this is not being called from within a callback to a virtual
+    /// table xSync() method. If it is, the error code will be set to
+    /// SQLITE_LOCKED.
+    VBegin,
+
+    /// Call the xCreate method for a virtual table.
+    ///
+    /// P2 is a register that holds the name of a virtual table in database
+    /// P1. Call the xCreate method for that table.
+    VCreate {
+        /// Database number
+        db_num: i32,
+        /// Register containing table name
+        name_reg: i32,
+    },
+
+    /// Call the xDestroy method for a virtual table.
+    ///
+    /// P4 is the name of a virtual table in database P1. Call the xDestroy
+    /// method of that table.
+    VDestroy {
+        /// Database number
+        db_num: i32,
+    },
+
+    /// Open a cursor to a virtual table.
+    ///
+    /// P4 is a pointer to a virtual table object, an sqlite3_vtab structure.
+    /// P1 is a cursor number. This opcode opens a cursor to the virtual
+    /// table and stores that cursor in P1.
+    VOpen {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    /// Run the xIntegrity method for a virtual table.
+    ///
+    /// P4 is a pointer to a Table object that is a virtual table in schema P1
+    /// that supports the xIntegrity() method. This opcode runs the xIntegrity()
+    /// method for that virtual table, using P3 as the integer argument. If
+    /// an error is reported back, the table name is prepended to the error
+    /// message and that message is stored in P2. If no errors are seen,
+    /// register P2 is set to NULL.
+    VCheck {
+        /// Schema number
+        schema: i32,
+        /// Output register for error message
+        dest: i32,
+        /// Integer argument for xIntegrity
+        arg: i32,
+    },
+
+    /// Set up a ValueList for sqlite3_vtab_in_first()/sqlite3_vtab_in_next().
+    ///
+    /// Set register P2 to be a pointer to a ValueList object for cursor P1
+    /// with cache register P3 and output register P3+1. This ValueList object
+    /// can be used as the first argument to sqlite3_vtab_in_first() and
+    /// sqlite3_vtab_in_next() to extract all of the values stored in the P1
+    /// cursor.
+    VInitIn {
+        /// Cursor number
+        cursor: i32,
+        /// Output register for ValueList pointer
+        dest: i32,
+        /// Cache register
+        cache_reg: i32,
+    },
+
+    /// Filter a virtual table result set.
+    ///
+    /// P1 is a cursor opened using VOpen. P2 is an address to jump to if
+    /// the filtered result set is empty. P4 is either NULL or a string that
+    /// was generated by the xBestIndex method of the module. The interpretation
+    /// of the P4 string is left to the module implementation.
+    ///
+    /// This opcode invokes the xFilter method on the virtual table specified
+    /// by P1. The integer query plan parameter to xFilter is stored in register
+    /// P3. Register P3+1 stores the argc parameter to be passed to the xFilter
+    /// method. Registers P3+2..P3+1+argc are the argc additional parameters
+    /// which are passed to xFilter as argv.
+    VFilter {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if empty
+        target: i32,
+        /// Register containing query plan
+        args_reg: i32,
+    },
+
+    /// Get a column value from a virtual table.
+    ///
+    /// Store in register P3 the value of the P2-th column of the current row
+    /// of the virtual-table of cursor P1.
+    ///
+    /// If the VColumn opcode is being used to fetch the value of an unchanging
+    /// column during an UPDATE operation, then the P5 value is OPFLAG_NOCHNG.
+    /// This will cause the sqlite3_vtab_nochange() function to return true
+    /// inside the xColumn method of the virtual table implementation.
+    VColumn {
+        /// Cursor number
+        cursor: i32,
+        /// Column number
+        column: i32,
+        /// Destination register
+        dest: i32,
+        /// Flags (e.g., OPFLAG_NOCHNG)
+        flags: u16,
+    },
+
+    /// Advance to the next row in a virtual table result set.
+    ///
+    /// Advance virtual table P1 to the next row in its result set and
+    /// jump to instruction P2. Or, if the virtual table has reached
+    /// the end of its result set, then fall through to the next instruction.
+    VNext {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if more rows
+        target: i32,
+    },
+
+    /// Rename a virtual table.
+    ///
+    /// P4 is a pointer to a virtual table object, an sqlite3_vtab structure.
+    /// This opcode invokes the corresponding xRename method. The value
+    /// in register P1 is passed as the zName argument to the xRename method.
+    VRename {
+        /// Register containing new name
+        name_reg: i32,
+    },
+
+    /// Update a virtual table (INSERT, UPDATE, or DELETE).
+    ///
+    /// P4 is a pointer to a virtual table object, an sqlite3_vtab structure.
+    /// This opcode invokes the corresponding xUpdate method. P2 values
+    /// are contiguous memory cells starting at P3 to pass to the xUpdate
+    /// invocation. The value in register (P3+P2-1) corresponds to the
+    /// p2th element of the argv array passed to xUpdate.
+    ///
+    /// The xUpdate method will do a DELETE or an INSERT or both.
+    /// The argv\[0\] element (which corresponds to memory cell P3)
+    /// is the rowid of a row to delete. If argv\[0\] is NULL then no
+    /// deletion occurs. The argv\[1\] element is the rowid of the new
+    /// row. This can be NULL to have the virtual table select the new
+    /// rowid for itself. The subsequent elements in the array are
+    /// the values of columns in the new row.
+    ///
+    /// If P2==1 then no insert is performed. argv\[0\] is the rowid of
+    /// a row to delete.
+    ///
+    /// P1 is a boolean flag. If it is set to true and the xUpdate call
+    /// is successful, then the value returned by sqlite3_last_insert_rowid()
+    /// is set to the value of the rowid for the row just inserted.
+    ///
+    /// P5 is the error actions (OE_Replace, OE_Fail, etc) to apply in the case
+    /// of a constraint failure on an insert or update.
+    VUpdate {
+        /// Update rowid flag
+        update_rowid: i32,
+        /// Number of arguments
+        argc: i32,
+        /// First argument register
+        args_reg: i32,
+        /// Error action flags
+        on_error: u16,
+    },
+
+    // =========================================================================
     // Miscellaneous
     // =========================================================================
     /// Do nothing. Continue downward to the next opcode.
@@ -2476,6 +2743,11 @@ impl Insn {
 
             Insn::AggStep { .. } => RawOpcode::AggStep as u8,
             Insn::AggFinal { .. } => RawOpcode::AggFinal as u8,
+            Insn::AggStep1 { .. } => RawOpcode::AggStep1 as u8,
+            Insn::AggValue { .. } => RawOpcode::AggValue as u8,
+            Insn::AggInverse { .. } => RawOpcode::AggInverse as u8,
+            Insn::Function { .. } => RawOpcode::Function as u8,
+            Insn::PureFunc { .. } => RawOpcode::PureFunc as u8,
 
             // Logical
             Insn::And { .. } => RawOpcode::And as u8,
@@ -2575,6 +2847,19 @@ impl Insn {
             Insn::Offset { .. } => RawOpcode::Offset as u8,
             Insn::MaxPgcnt { .. } => RawOpcode::MaxPgcnt as u8,
             Insn::Pagecount { .. } => RawOpcode::Pagecount as u8,
+
+            // Virtual tables
+            Insn::VBegin => RawOpcode::VBegin as u8,
+            Insn::VCreate { .. } => RawOpcode::VCreate as u8,
+            Insn::VDestroy { .. } => RawOpcode::VDestroy as u8,
+            Insn::VOpen { .. } => RawOpcode::VOpen as u8,
+            Insn::VCheck { .. } => RawOpcode::VCheck as u8,
+            Insn::VInitIn { .. } => RawOpcode::VInitIn as u8,
+            Insn::VFilter { .. } => RawOpcode::VFilter as u8,
+            Insn::VColumn { .. } => RawOpcode::VColumn as u8,
+            Insn::VNext { .. } => RawOpcode::VNext as u8,
+            Insn::VRename { .. } => RawOpcode::VRename as u8,
+            Insn::VUpdate { .. } => RawOpcode::VUpdate as u8,
 
             Insn::Noop => RawOpcode::Noop as u8,
             Insn::Explain => RawOpcode::Explain as u8,
@@ -2760,13 +3045,18 @@ impl Insn {
             Insn::Yield { coroutine } => (*coroutine, 0, 0, 0),
             Insn::EndCoroutine { coroutine } => (*coroutine, 0, 0, 0),
 
-            // Aggregation
+            // Aggregation/Functions
             Insn::AggStep {
                 args,
                 accum,
                 num_args,
                 ..
             } => (*args, 0, *accum, *num_args as u16),
+            Insn::AggStep1 { is_inverse, args, accum, num_args } => (*is_inverse, *args, *accum, *num_args),
+            Insn::AggValue { num_args, dest } => (0, *num_args, *dest, 0),
+            Insn::AggInverse { args, accum, num_args } => (0, *args, *accum, *num_args),
+            Insn::Function { const_mask, args, dest } => (*const_mask, *args, *dest, 0),
+            Insn::PureFunc { const_mask, args, dest } => (*const_mask, *args, *dest, 0),
             Insn::AggFinal { accum, num_args } => (*accum, *num_args, 0, 0),
 
             // Logical
@@ -2868,6 +3158,19 @@ impl Insn {
             Insn::MaxPgcnt { db_num, dest, new_max } => (*db_num, *dest, *new_max, 0),
             Insn::Pagecount { db_num, dest } => (*db_num, *dest, 0, 0),
 
+            // Virtual tables
+            Insn::VBegin => (0, 0, 0, 0),
+            Insn::VCreate { db_num, name_reg } => (*db_num, *name_reg, 0, 0),
+            Insn::VDestroy { db_num } => (*db_num, 0, 0, 0),
+            Insn::VOpen { cursor } => (*cursor, 0, 0, 0),
+            Insn::VCheck { schema, dest, arg } => (*schema, *dest, *arg, 0),
+            Insn::VInitIn { cursor, dest, cache_reg } => (*cursor, *dest, *cache_reg, 0),
+            Insn::VFilter { cursor, target, args_reg } => (*cursor, *target, *args_reg, 0),
+            Insn::VColumn { cursor, column, dest, flags } => (*cursor, *column, *dest, *flags),
+            Insn::VNext { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::VRename { name_reg } => (*name_reg, 0, 0, 0),
+            Insn::VUpdate { update_rowid, argc, args_reg, on_error } => (*update_rowid, *argc, *args_reg, *on_error),
+
             // Misc
             Insn::Noop => (0, 0, 0, 0),
             Insn::Explain => (0, 0, 0, 0),
@@ -2967,6 +3270,11 @@ impl Insn {
             Insn::EndCoroutine { .. } => "EndCoroutine",
             Insn::AggStep { .. } => "AggStep",
             Insn::AggFinal { .. } => "AggFinal",
+            Insn::AggStep1 { .. } => "AggStep1",
+            Insn::AggValue { .. } => "AggValue",
+            Insn::AggInverse { .. } => "AggInverse",
+            Insn::Function { .. } => "Function",
+            Insn::PureFunc { .. } => "PureFunc",
 
             // Logical
             Insn::And { .. } => "And",
@@ -3066,6 +3374,19 @@ impl Insn {
             Insn::Offset { .. } => "Offset",
             Insn::MaxPgcnt { .. } => "MaxPgcnt",
             Insn::Pagecount { .. } => "Pagecount",
+
+            // Virtual tables
+            Insn::VBegin => "VBegin",
+            Insn::VCreate { .. } => "VCreate",
+            Insn::VDestroy { .. } => "VDestroy",
+            Insn::VOpen { .. } => "VOpen",
+            Insn::VCheck { .. } => "VCheck",
+            Insn::VInitIn { .. } => "VInitIn",
+            Insn::VFilter { .. } => "VFilter",
+            Insn::VColumn { .. } => "VColumn",
+            Insn::VNext { .. } => "VNext",
+            Insn::VRename { .. } => "VRename",
+            Insn::VUpdate { .. } => "VUpdate",
 
             Insn::Noop => "Noop",
             Insn::Explain => "Explain",

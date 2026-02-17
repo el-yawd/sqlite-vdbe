@@ -3584,6 +3584,307 @@ fn test_sorter_instructions_exist() {
 }
 
 // ============================================================================
+// Virtual Table Instruction Tests
+// ============================================================================
+
+#[test]
+fn test_virtual_table_instructions_exist() {
+    // Virtual table operations require complex setup including
+    // sqlite3_vtab structures in P4. These tests verify the
+    // instruction variants exist and have correct names.
+
+    let _ = Insn::VBegin;
+    let _ = Insn::VCreate { db_num: 0, name_reg: 1 };
+    let _ = Insn::VDestroy { db_num: 0 };
+    let _ = Insn::VOpen { cursor: 0 };
+    let _ = Insn::VCheck { schema: 0, dest: 1, arg: 0 };
+    let _ = Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 };
+    let _ = Insn::VFilter { cursor: 0, target: 10, args_reg: 1 };
+    let _ = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 };
+    let _ = Insn::VNext { cursor: 0, target: 5 };
+    let _ = Insn::VRename { name_reg: 1 };
+    let _ = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 };
+
+    // Verify correct names
+    assert_eq!(Insn::VBegin.name(), "VBegin");
+    assert_eq!(Insn::VCreate { db_num: 0, name_reg: 1 }.name(), "VCreate");
+    assert_eq!(Insn::VDestroy { db_num: 0 }.name(), "VDestroy");
+    assert_eq!(Insn::VOpen { cursor: 0 }.name(), "VOpen");
+    assert_eq!(Insn::VCheck { schema: 0, dest: 1, arg: 0 }.name(), "VCheck");
+    assert_eq!(Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }.name(), "VInitIn");
+    assert_eq!(Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }.name(), "VFilter");
+    assert_eq!(Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }.name(), "VColumn");
+    assert_eq!(Insn::VNext { cursor: 0, target: 5 }.name(), "VNext");
+    assert_eq!(Insn::VRename { name_reg: 1 }.name(), "VRename");
+    assert_eq!(Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }.name(), "VUpdate");
+}
+
+#[test]
+fn test_virtual_table_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    // Verify raw opcode values match SQLite's definitions
+    assert_eq!(Insn::VBegin.raw_opcode(), RawOpcode::VBegin as u8);
+    assert_eq!(Insn::VCreate { db_num: 0, name_reg: 1 }.raw_opcode(), RawOpcode::VCreate as u8);
+    assert_eq!(Insn::VDestroy { db_num: 0 }.raw_opcode(), RawOpcode::VDestroy as u8);
+    assert_eq!(Insn::VOpen { cursor: 0 }.raw_opcode(), RawOpcode::VOpen as u8);
+    assert_eq!(Insn::VCheck { schema: 0, dest: 1, arg: 0 }.raw_opcode(), RawOpcode::VCheck as u8);
+    assert_eq!(Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }.raw_opcode(), RawOpcode::VInitIn as u8);
+    assert_eq!(Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }.raw_opcode(), RawOpcode::VFilter as u8);
+    assert_eq!(Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }.raw_opcode(), RawOpcode::VColumn as u8);
+    assert_eq!(Insn::VNext { cursor: 0, target: 5 }.raw_opcode(), RawOpcode::VNext as u8);
+    assert_eq!(Insn::VRename { name_reg: 1 }.raw_opcode(), RawOpcode::VRename as u8);
+    assert_eq!(Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }.raw_opcode(), RawOpcode::VUpdate as u8);
+}
+
+#[test]
+fn test_virtual_table_display() {
+    // Test Display implementation (uses name())
+    assert_eq!(format!("{}", Insn::VBegin), "VBegin");
+    assert_eq!(format!("{}", Insn::VCreate { db_num: 0, name_reg: 1 }), "VCreate");
+    assert_eq!(format!("{}", Insn::VDestroy { db_num: 0 }), "VDestroy");
+    assert_eq!(format!("{}", Insn::VOpen { cursor: 0 }), "VOpen");
+    assert_eq!(format!("{}", Insn::VCheck { schema: 0, dest: 1, arg: 0 }), "VCheck");
+    assert_eq!(format!("{}", Insn::VInitIn { cursor: 0, dest: 1, cache_reg: 2 }), "VInitIn");
+    assert_eq!(format!("{}", Insn::VFilter { cursor: 0, target: 10, args_reg: 1 }), "VFilter");
+    assert_eq!(format!("{}", Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 }), "VColumn");
+    assert_eq!(format!("{}", Insn::VNext { cursor: 0, target: 5 }), "VNext");
+    assert_eq!(format!("{}", Insn::VRename { name_reg: 1 }), "VRename");
+    assert_eq!(format!("{}", Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 }), "VUpdate");
+}
+
+#[test]
+fn test_virtual_table_debug() {
+    // Test Debug implementation
+    let vbegin = Insn::VBegin;
+    let debug_str = format!("{:?}", vbegin);
+    assert!(debug_str.contains("VBegin"));
+
+    let vcreate = Insn::VCreate { db_num: 1, name_reg: 2 };
+    let debug_str = format!("{:?}", vcreate);
+    assert!(debug_str.contains("VCreate"));
+    assert!(debug_str.contains("db_num: 1"));
+    assert!(debug_str.contains("name_reg: 2"));
+
+    let vcolumn = Insn::VColumn { cursor: 1, column: 2, dest: 3, flags: 4 };
+    let debug_str = format!("{:?}", vcolumn);
+    assert!(debug_str.contains("VColumn"));
+    assert!(debug_str.contains("cursor: 1"));
+    assert!(debug_str.contains("column: 2"));
+    assert!(debug_str.contains("dest: 3"));
+    assert!(debug_str.contains("flags: 4"));
+}
+
+#[test]
+fn test_virtual_table_clone() {
+    // Test Clone implementation
+    let vbegin = Insn::VBegin;
+    let vbegin_clone = vbegin.clone();
+    assert_eq!(vbegin.name(), vbegin_clone.name());
+
+    let vcreate = Insn::VCreate { db_num: 1, name_reg: 2 };
+    let vcreate_clone = vcreate.clone();
+    assert_eq!(vcreate.raw_opcode(), vcreate_clone.raw_opcode());
+
+    let vupdate = Insn::VUpdate { update_rowid: 1, argc: 3, args_reg: 2, on_error: 5 };
+    let vupdate_clone = vupdate.clone();
+    assert_eq!(vupdate.name(), vupdate_clone.name());
+}
+
+#[test]
+fn test_vfilter_with_different_targets() {
+    // Test VFilter with various jump targets
+    let vfilter1 = Insn::VFilter { cursor: 0, target: 0, args_reg: 1 };
+    let vfilter2 = Insn::VFilter { cursor: 0, target: 100, args_reg: 1 };
+    let vfilter3 = Insn::VFilter { cursor: 5, target: 50, args_reg: 10 };
+
+    assert_eq!(vfilter1.name(), "VFilter");
+    assert_eq!(vfilter2.name(), "VFilter");
+    assert_eq!(vfilter3.name(), "VFilter");
+
+    // All should have the same opcode
+    assert_eq!(vfilter1.raw_opcode(), vfilter2.raw_opcode());
+    assert_eq!(vfilter2.raw_opcode(), vfilter3.raw_opcode());
+}
+
+#[test]
+fn test_vnext_jump_behavior() {
+    // Test VNext with various configurations
+    let vnext1 = Insn::VNext { cursor: 0, target: 5 };
+    let vnext2 = Insn::VNext { cursor: 1, target: 10 };
+    let vnext3 = Insn::VNext { cursor: 2, target: 0 };
+
+    assert_eq!(vnext1.name(), "VNext");
+    assert_eq!(vnext2.name(), "VNext");
+    assert_eq!(vnext3.name(), "VNext");
+}
+
+#[test]
+fn test_vcolumn_flags() {
+    // Test VColumn with different flag values
+    let vcol_no_flags = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0 };
+    let vcol_with_flags = Insn::VColumn { cursor: 0, column: 0, dest: 1, flags: 0x10 }; // OPFLAG_NOCHNG
+
+    assert_eq!(vcol_no_flags.name(), "VColumn");
+    assert_eq!(vcol_with_flags.name(), "VColumn");
+    assert_eq!(vcol_no_flags.raw_opcode(), vcol_with_flags.raw_opcode());
+}
+
+#[test]
+fn test_vupdate_error_actions() {
+    // Test VUpdate with different on_error values
+    let vupdate_abort = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 0 };
+    let vupdate_fail = Insn::VUpdate { update_rowid: 0, argc: 3, args_reg: 1, on_error: 1 };
+    let vupdate_replace = Insn::VUpdate { update_rowid: 1, argc: 5, args_reg: 2, on_error: 5 };
+
+    assert_eq!(vupdate_abort.name(), "VUpdate");
+    assert_eq!(vupdate_fail.name(), "VUpdate");
+    assert_eq!(vupdate_replace.name(), "VUpdate");
+}
+
+// ============================================================================
+// Function Instruction Tests
+// ============================================================================
+
+#[test]
+fn test_function_instructions_exist() {
+    // Function operations require FuncDef structures in P4.
+    // These tests verify the instruction variants exist.
+
+    let _ = Insn::Function { const_mask: 0, args: 1, dest: 2 };
+    let _ = Insn::PureFunc { const_mask: 0, args: 1, dest: 2 };
+    let _ = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 };
+    let _ = Insn::AggValue { num_args: 2, dest: 3 };
+    let _ = Insn::AggInverse { args: 1, accum: 2, num_args: 3 };
+
+    // Verify correct names
+    assert_eq!(Insn::Function { const_mask: 0, args: 1, dest: 2 }.name(), "Function");
+    assert_eq!(Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }.name(), "PureFunc");
+    assert_eq!(Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }.name(), "AggStep1");
+    assert_eq!(Insn::AggValue { num_args: 2, dest: 3 }.name(), "AggValue");
+    assert_eq!(Insn::AggInverse { args: 1, accum: 2, num_args: 3 }.name(), "AggInverse");
+}
+
+#[test]
+fn test_function_raw_opcodes() {
+    use sqlite_vdbe::RawOpcode;
+
+    // Verify raw opcode values match SQLite's definitions
+    assert_eq!(Insn::Function { const_mask: 0, args: 1, dest: 2 }.raw_opcode(), RawOpcode::Function as u8);
+    assert_eq!(Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }.raw_opcode(), RawOpcode::PureFunc as u8);
+    assert_eq!(Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }.raw_opcode(), RawOpcode::AggStep1 as u8);
+    assert_eq!(Insn::AggValue { num_args: 2, dest: 3 }.raw_opcode(), RawOpcode::AggValue as u8);
+    assert_eq!(Insn::AggInverse { args: 1, accum: 2, num_args: 3 }.raw_opcode(), RawOpcode::AggInverse as u8);
+}
+
+#[test]
+fn test_function_display() {
+    // Test Display implementation
+    assert_eq!(format!("{}", Insn::Function { const_mask: 0, args: 1, dest: 2 }), "Function");
+    assert_eq!(format!("{}", Insn::PureFunc { const_mask: 0, args: 1, dest: 2 }), "PureFunc");
+    assert_eq!(format!("{}", Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 }), "AggStep1");
+    assert_eq!(format!("{}", Insn::AggValue { num_args: 2, dest: 3 }), "AggValue");
+    assert_eq!(format!("{}", Insn::AggInverse { args: 1, accum: 2, num_args: 3 }), "AggInverse");
+}
+
+#[test]
+fn test_function_debug() {
+    // Test Debug implementation
+    let func = Insn::Function { const_mask: 7, args: 1, dest: 2 };
+    let debug_str = format!("{:?}", func);
+    assert!(debug_str.contains("Function"));
+    assert!(debug_str.contains("const_mask: 7"));
+    assert!(debug_str.contains("args: 1"));
+    assert!(debug_str.contains("dest: 2"));
+
+    let aggstep = Insn::AggStep1 { is_inverse: 1, args: 2, accum: 3, num_args: 4 };
+    let debug_str = format!("{:?}", aggstep);
+    assert!(debug_str.contains("AggStep1"));
+    assert!(debug_str.contains("is_inverse: 1"));
+    assert!(debug_str.contains("num_args: 4"));
+}
+
+#[test]
+fn test_function_clone() {
+    // Test Clone implementation
+    let func = Insn::Function { const_mask: 15, args: 1, dest: 2 };
+    let func_clone = func.clone();
+    assert_eq!(func.name(), func_clone.name());
+    assert_eq!(func.raw_opcode(), func_clone.raw_opcode());
+
+    let pure = Insn::PureFunc { const_mask: 3, args: 4, dest: 5 };
+    let pure_clone = pure.clone();
+    assert_eq!(pure.name(), pure_clone.name());
+}
+
+#[test]
+fn test_function_const_mask_variations() {
+    // Test Function with different const_mask values (bitmask for constant args)
+    let func_no_const = Insn::Function { const_mask: 0, args: 1, dest: 2 };
+    let func_first_const = Insn::Function { const_mask: 1, args: 1, dest: 2 };
+    let func_all_const = Insn::Function { const_mask: 0xFF, args: 1, dest: 2 };
+
+    assert_eq!(func_no_const.name(), "Function");
+    assert_eq!(func_first_const.name(), "Function");
+    assert_eq!(func_all_const.name(), "Function");
+}
+
+#[test]
+fn test_aggstep1_inverse_flag() {
+    // Test AggStep1 with inverse flag
+    let step = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 2, num_args: 3 };
+    let inverse = Insn::AggStep1 { is_inverse: 1, args: 1, accum: 2, num_args: 3 };
+
+    assert_eq!(step.name(), "AggStep1");
+    assert_eq!(inverse.name(), "AggStep1");
+    assert_eq!(step.raw_opcode(), inverse.raw_opcode());
+}
+
+#[test]
+fn test_agg_operations_different_arg_counts() {
+    // Test aggregate operations with various argument counts
+    let agg1 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 1 };
+    let agg2 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 5 };
+    let agg3 = Insn::AggStep1 { is_inverse: 0, args: 1, accum: 10, num_args: 10 };
+
+    assert_eq!(agg1.name(), "AggStep1");
+    assert_eq!(agg2.name(), "AggStep1");
+    assert_eq!(agg3.name(), "AggStep1");
+
+    let val1 = Insn::AggValue { num_args: 0, dest: 1 };
+    let val2 = Insn::AggValue { num_args: 5, dest: 1 };
+
+    assert_eq!(val1.name(), "AggValue");
+    assert_eq!(val2.name(), "AggValue");
+}
+
+#[test]
+fn test_pure_func_vs_function() {
+    // Verify PureFunc and Function are distinct opcodes
+    use sqlite_vdbe::RawOpcode;
+
+    let func = Insn::Function { const_mask: 0, args: 1, dest: 2 };
+    let pure = Insn::PureFunc { const_mask: 0, args: 1, dest: 2 };
+
+    assert_ne!(func.raw_opcode(), pure.raw_opcode());
+    assert_eq!(func.raw_opcode(), RawOpcode::Function as u8);
+    assert_eq!(pure.raw_opcode(), RawOpcode::PureFunc as u8);
+}
+
+#[test]
+fn test_agg_inverse_vs_aggstep() {
+    // Verify AggInverse and AggStep are distinct opcodes
+    use sqlite_vdbe::RawOpcode;
+
+    let step = Insn::AggStep { func_def: 0, args: 1, accum: 2, num_args: 3 };
+    let inverse = Insn::AggInverse { args: 1, accum: 2, num_args: 3 };
+
+    assert_ne!(step.raw_opcode(), inverse.raw_opcode());
+    assert_eq!(step.raw_opcode(), RawOpcode::AggStep as u8);
+    assert_eq!(inverse.raw_opcode(), RawOpcode::AggInverse as u8);
+}
+
+// ============================================================================
 // IfNotOpen Tests
 // ============================================================================
 
