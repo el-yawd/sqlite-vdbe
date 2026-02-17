@@ -1,6 +1,29 @@
 //! VDBE program building and execution
+//!
+//! This module provides the core types for building and executing VDBE programs:
+//!
+//! - [`ProgramBuilder`] - Build programs by adding instructions
+//! - [`Program`] - Execute programs and retrieve results
+//! - [`InsnRecord`] - Inspect recorded instructions for display/debugging
+//!
+//! # EXPLAIN Format Display
+//!
+//! The [`Program`] type implements [`Display`](std::fmt::Display) to output
+//! bytecode in SQLite's `EXPLAIN` format:
+//!
+//! ```text
+//! addr  opcode         p1    p2    p3    p4             p5  comment
+//! ----  -------------  ----  ----  ----  -------------  --  -------------
+//! 0     Init           0     4     0                    0   Start at 4
+//! 1     Add            2     2     1                    0   r[1]=r[2]+r[2]
+//! 2     ResultRow      1     1     0                    0   output=r[1]
+//! 3     Halt           0     0     0                    0
+//! ```
+//!
+//! Use [`ProgramBuilder::add_with_comment`] to attach comments to instructions.
 
 use std::ffi::CString;
+use std::fmt;
 use std::marker::PhantomData;
 
 use crate::error::{Error, Result};
@@ -30,6 +53,50 @@ impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "@{}", self.0)
     }
+}
+
+/// Record of an instruction for display and inspection
+///
+/// This stores the information needed to display instructions in SQLite's
+/// EXPLAIN format. Each record captures the opcode name, operands (P1-P5),
+/// and an optional comment.
+///
+/// # Example
+///
+/// ```no_run
+/// use sqlite_vdbe::{Connection, Insn};
+///
+/// let mut conn = Connection::open_in_memory()?;
+/// let mut builder = conn.new_program()?;
+///
+/// let r1 = builder.alloc_register();
+/// builder.add_with_comment(Insn::Integer { value: 42, dest: r1 }, "the answer");
+/// builder.add(Insn::Halt);
+///
+/// let program = builder.finish(1)?;
+///
+/// // Access individual instruction records
+/// for insn in program.instructions() {
+///     println!("{}: p1={}, p2={}", insn.opcode, insn.p1, insn.p2);
+/// }
+/// # Ok::<(), sqlite_vdbe::Error>(())
+/// ```
+#[derive(Debug, Clone)]
+pub struct InsnRecord {
+    /// Opcode name (e.g., "Add", "Integer", "Goto")
+    pub opcode: String,
+    /// P1 operand
+    pub p1: i32,
+    /// P2 operand
+    pub p2: i32,
+    /// P3 operand
+    pub p3: i32,
+    /// P4 operand as string (empty if not used)
+    pub p4: String,
+    /// P5 operand
+    pub p5: u16,
+    /// Optional comment for display
+    pub comment: String,
 }
 
 /// A VDBE program under construction
@@ -67,6 +134,8 @@ pub struct ProgramBuilder {
     db: *mut ffi::sqlite3,
     next_register: i32,
     next_cursor: i32,
+    /// Recorded instructions for display purposes
+    instructions: Vec<InsnRecord>,
     // Mark as !Send and !Sync
     _marker: PhantomData<*const ()>,
 }
@@ -86,6 +155,7 @@ impl ProgramBuilder {
             db,
             next_register: 1, // Register 0 is reserved
             next_cursor: 0,
+            instructions: Vec::new(),
             _marker: PhantomData,
         })
     }
@@ -156,8 +226,51 @@ impl ProgramBuilder {
     /// # Ok::<(), sqlite_vdbe::Error>(())
     /// ```
     pub fn add(&mut self, insn: Insn) -> Address {
+        self.add_with_comment(insn, "")
+    }
+
+    /// Add an instruction to the program with a comment
+    ///
+    /// Same as `add()`, but allows attaching a comment that will be displayed
+    /// when the program is printed in EXPLAIN format.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use sqlite_vdbe::{Connection, Insn};
+    ///
+    /// let mut conn = Connection::open_in_memory()?;
+    /// let mut builder = conn.new_program()?;
+    ///
+    /// let r1 = builder.alloc_register();
+    /// builder.add_with_comment(Insn::Integer { value: 42, dest: r1 }, "r[1]=42");
+    ///
+    /// # Ok::<(), sqlite_vdbe::Error>(())
+    /// ```
+    pub fn add_with_comment(&mut self, insn: Insn, comment: &str) -> Address {
         let opcode = insn.raw_opcode() as i32;
         let (p1, p2, p3, p5) = insn.operands();
+        let name = insn.name().to_string();
+
+        // Get P4 string representation for display
+        let p4_str = match insn.p4() {
+            Some(InsnP4::Int(i)) => i.to_string(),
+            Some(InsnP4::Int64(i)) => i.to_string(),
+            Some(InsnP4::Real(r)) => format!("{:?}", r),
+            Some(InsnP4::String(ref s)) => s.clone(),
+            None => String::new(),
+        };
+
+        // Record instruction for display
+        self.instructions.push(InsnRecord {
+            opcode: name,
+            p1,
+            p2,
+            p3,
+            p4: p4_str,
+            p5,
+            comment: comment.to_string(),
+        });
 
         // Handle P4 if present
         if let Some(p4) = insn.p4() {
@@ -370,7 +483,7 @@ impl ProgramBuilder {
     /// # Returns
     ///
     /// An executable `Program` that can be stepped through.
-    pub fn finish(self, num_columns: u16) -> Result<Program> {
+    pub fn finish(mut self, num_columns: u16) -> Result<Program> {
         unsafe {
             // Set the number of result columns
             ffi::sqlite3VdbeSetNumCols(self.raw, num_columns as i32);
@@ -379,11 +492,15 @@ impl ProgramBuilder {
             ffi::sqlite3_vdbe_make_ready(self.raw, self.next_register, self.next_cursor);
         }
 
+        // Take ownership of instructions before forget
+        let instructions = std::mem::take(&mut self.instructions);
+
         // Transfer ownership to Program (don't drop the Vdbe here)
         let program = Program {
             raw: self.raw,
             db: self.db,
             done: false,
+            instructions,
             _marker: PhantomData,
         };
 
@@ -455,6 +572,8 @@ pub struct Program {
     raw: *mut ffi::Vdbe,
     db: *mut ffi::sqlite3,
     done: bool,
+    /// Recorded instructions for display purposes
+    instructions: Vec<InsnRecord>,
     // Mark as !Send and !Sync
     _marker: PhantomData<*const ()>,
 }
@@ -664,6 +783,40 @@ impl Program {
     /// The returned pointer is valid as long as the Program is alive.
     pub unsafe fn raw_ptr(&self) -> *mut ffi::Vdbe {
         self.raw
+    }
+
+    /// Get the recorded instructions
+    ///
+    /// Returns a slice of all instructions that were added to this program.
+    pub fn instructions(&self) -> &[InsnRecord] {
+        &self.instructions
+    }
+}
+
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Header
+        writeln!(
+            f,
+            "{:<6}{:<15}{:<6}{:<6}{:<6}{:<15}{:<4}comment",
+            "addr", "opcode", "p1", "p2", "p3", "p4", "p5"
+        )?;
+        writeln!(
+            f,
+            "{:<6}{:<15}{:<6}{:<6}{:<6}{:<15}{:<4}-------------",
+            "----", "-------------", "----", "----", "----", "-------------", "--"
+        )?;
+
+        // Instructions
+        for (addr, insn) in self.instructions.iter().enumerate() {
+            writeln!(
+                f,
+                "{:<6}{:<15}{:<6}{:<6}{:<6}{:<15}{:<4}{}",
+                addr, insn.opcode, insn.p1, insn.p2, insn.p3, insn.p4, insn.p5, insn.comment
+            )?;
+        }
+
+        Ok(())
     }
 }
 

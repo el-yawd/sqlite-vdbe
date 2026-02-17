@@ -118,7 +118,7 @@ pub mod opcode {
 pub use connection::Connection;
 pub use error::{Error, Result};
 pub use insn::{Insn, P4, RawOpcode};
-pub use program::{Address, Program, ProgramBuilder, StepResult};
+pub use program::{Address, InsnRecord, Program, ProgramBuilder, StepResult};
 pub use value::Value;
 
 // Legacy re-export for backwards compatibility
