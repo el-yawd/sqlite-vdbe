@@ -11,6 +11,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Install Python
+        run: apt-get update && apt-get install -y python3 curl
+
+      - name: Download SQLite opcode docs
+        run: curl -fsSL https://sqlite.org/opcode.html -o /tmp/opcode.html
+
+      - name: Check opcode coverage
+        run: python3 scripts/check_opcodes.py /tmp/opcode.html
+
+      - name: Run tests
+        run: cargo test
+
       - name: Publish
         run: cargo publish
         env:
