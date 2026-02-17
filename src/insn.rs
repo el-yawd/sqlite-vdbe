@@ -963,7 +963,7 @@ pub enum Insn {
     /// These flags control aspects of the operation of the btree. The
     /// BTREE_OMIT_JOURNAL and BTREE_SINGLE flags are added automatically.
     ///
-    /// If P3 is positive, then reg[P3] is modified slightly so that it can be
+    /// If P3 is positive, then reg\[P3\] is modified slightly so that it can be
     /// used as zero-length data for Insert. This is an optimization that avoids
     /// an extra Blob opcode to initialize that register.
     OpenEphemeral {

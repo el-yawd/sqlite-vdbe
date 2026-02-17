@@ -189,20 +189,29 @@ impl ProgramBuilder {
                 },
                 InsnP4::String(ref s) => {
                     if let Ok(c_str) = CString::new(s.as_str()) {
-                        // Use P4_STATIC with into_raw() to transfer ownership
-                        // We leak the CString here - SQLite will use the pointer but not free it
-                        // This is acceptable for the lifetime of the program
-                        let ptr = c_str.into_raw();
+                        let bytes = c_str.as_bytes_with_nul();
                         unsafe {
-                            ffi::sqlite3VdbeAddOp4(
-                                self.raw,
-                                opcode,
-                                p1,
-                                p2,
-                                p3,
-                                ptr,
-                                ffi::P4_STATIC,
-                            )
+                            // Allocate with sqlite3_malloc so SQLite can free it
+                            let ptr = ffi::sqlite3_malloc(bytes.len() as i32);
+                            if !ptr.is_null() {
+                                std::ptr::copy_nonoverlapping(
+                                    bytes.as_ptr(),
+                                    ptr as *mut u8,
+                                    bytes.len(),
+                                );
+                                ffi::sqlite3VdbeAddOp4(
+                                    self.raw,
+                                    opcode,
+                                    p1,
+                                    p2,
+                                    p3,
+                                    ptr as *const i8,
+                                    ffi::P4_DYNAMIC,
+                                )
+                            } else {
+                                // Allocation failed, fall back to op3
+                                ffi::sqlite3VdbeAddOp3(self.raw, opcode, p1, p2, p3)
+                            }
                         }
                     } else {
                         // Fallback to op3 if string conversion fails
