@@ -2882,6 +2882,160 @@ pub enum Insn {
         target: i32,
     },
 
+    /// Set the permutation used by the next Compare opcode.
+    ///
+    /// The permutation is stored in P4 as an integer array. The first integer
+    /// in the array is the length, and does not become part of the permutation.
+    ///
+    /// This opcode must immediately precede a Compare opcode that has the
+    /// OPFLAG_PERMUTE bit set in P5.
+    ///
+    /// Note: P4 must be set separately as it requires a P4_INTARRAY pointer.
+    Permutation,
+
+    /// Compare two vectors of registers.
+    ///
+    /// Compare registers in reg(P1)..reg(P1+P3-1) with reg(P2)..reg(P2+P3-1).
+    /// Save the comparison result for use by the next Jump instruction.
+    ///
+    /// If P5 has OPFLAG_PERMUTE set, the comparison order is determined by
+    /// the preceding Permutation opcode.
+    ///
+    /// Note: P4 (KeyInfo) must be set separately for collation sequences.
+    Compare {
+        /// First register range start
+        lhs: i32,
+        /// Second register range start
+        rhs: i32,
+        /// Number of registers to compare
+        count: i32,
+        /// Flags (OPFLAG_PERMUTE)
+        flags: u16,
+    },
+
+    // =========================================================================
+    // Collation and Sorting
+    // =========================================================================
+    /// Set the collation sequence for subsequent operations.
+    ///
+    /// P4 is a pointer to a CollSeq structure. If P1 is non-zero, then
+    /// register P1 is set to zero.
+    ///
+    /// Note: P4 (CollSeq pointer) must be set separately.
+    CollSeq {
+        /// Register to set to zero (0 if unused)
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Cursor Operations (Advanced)
+    // =========================================================================
+    /// Reopen an index cursor if it's on a different index.
+    ///
+    /// If cursor P1 is open on an index with root page P2, clear the cursor
+    /// and fall through. Otherwise, close and reopen the cursor on the new
+    /// index.
+    ///
+    /// This is an optimization to avoid closing and reopening cursors
+    /// unnecessarily.
+    ///
+    /// Note: P4 (KeyInfo) must be set separately.
+    ReopenIdx {
+        /// Cursor number
+        cursor: i32,
+        /// Root page number
+        root: i32,
+        /// Database number
+        db_num: i32,
+        /// Flags (OPFLAG_SEEKEQ)
+        flags: u16,
+    },
+
+    /// Provide a hint to the cursor about expected access patterns.
+    ///
+    /// P1 is a cursor. P4 is an expression tree (Expr pointer) that
+    /// describes the expected range of keys to be accessed.
+    ///
+    /// Note: P4 (Expr pointer) must be set separately. Requires
+    /// SQLITE_ENABLE_CURSOR_HINTS compile flag.
+    CursorHint {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    // =========================================================================
+    // Table Locking (Shared Cache)
+    // =========================================================================
+    /// Obtain a lock on a table.
+    ///
+    /// P1 is the database index. P2 is the root page of the table.
+    /// P3 is 1 for a write lock, 0 for a read lock.
+    /// P4 is the table name (for error messages).
+    ///
+    /// This is only used with shared-cache mode.
+    TableLock {
+        /// Database index
+        db_num: i32,
+        /// Root page of the table
+        root: i32,
+        /// 1 for write lock, 0 for read lock
+        write: i32,
+    },
+
+    // =========================================================================
+    // Integrity Check
+    // =========================================================================
+    /// Check database integrity.
+    ///
+    /// Do an analysis of the database to verify integrity. P1 is the register
+    /// to store error messages. P2 is the number of root pages to check.
+    /// P3 is the register containing the maximum number of errors to report.
+    /// P4 is an array of root page numbers. P5 is the database number.
+    ///
+    /// Note: P4 (int array) must be set separately.
+    IntegrityCk {
+        /// Register for error message output
+        msg_reg: i32,
+        /// Number of root pages in P4 array
+        count: i32,
+        /// Register with max errors to report
+        err_reg: i32,
+        /// Database number
+        db_num: u16,
+    },
+
+    // =========================================================================
+    // Triggers and Subprograms
+    // =========================================================================
+    /// Execute a trigger subprogram.
+    ///
+    /// P4 is a pointer to the SubProgram structure for the trigger.
+    /// P2 is the jump target if the trigger execution completes.
+    /// P3 is a register to allocate runtime space.
+    ///
+    /// Note: P4 (SubProgram pointer) must be set separately.
+    Program {
+        /// Jump target on completion
+        target: i32,
+        /// Register for runtime space allocation
+        runtime_reg: i32,
+        /// Flags
+        flags: u16,
+    },
+
+    /// Copy a trigger parameter to a register.
+    ///
+    /// This opcode is only valid within a trigger subprogram. It copies
+    /// a value from the parent frame to register P2.
+    ///
+    /// P1 is the parameter offset in the parent frame.
+    Param {
+        /// Parameter index in parent frame
+        index: i32,
+        /// Destination register
+        dest: i32,
+    },
+
     // =========================================================================
     // Raw Opcode - For opcodes not yet wrapped
     // =========================================================================
@@ -3153,6 +3307,27 @@ impl Insn {
 
             // Comparison
             Insn::ElseEq { .. } => RawOpcode::ElseEq as u8,
+
+            // Advanced comparison
+            Insn::Permutation => RawOpcode::Permutation as u8,
+            Insn::Compare { .. } => RawOpcode::Compare as u8,
+
+            // Collation
+            Insn::CollSeq { .. } => RawOpcode::CollSeq as u8,
+
+            // Advanced cursor
+            Insn::ReopenIdx { .. } => RawOpcode::ReopenIdx as u8,
+            Insn::CursorHint { .. } => RawOpcode::CursorHint as u8,
+
+            // Table locking
+            Insn::TableLock { .. } => RawOpcode::TableLock as u8,
+
+            // Integrity check
+            Insn::IntegrityCk { .. } => RawOpcode::IntegrityCk as u8,
+
+            // Triggers
+            Insn::Program { .. } => RawOpcode::Program as u8,
+            Insn::Param { .. } => RawOpcode::Param as u8,
 
             Insn::Raw { opcode, .. } => *opcode as u8,
         }
@@ -3698,6 +3873,50 @@ impl Insn {
             // Comparison
             Insn::ElseEq { target } => (0, *target, 0, 0),
 
+            // Advanced comparison
+            Insn::Permutation => (0, 0, 0, 0),
+            Insn::Compare {
+                lhs,
+                rhs,
+                count,
+                flags,
+            } => (*lhs, *rhs, *count, *flags),
+
+            // Collation
+            Insn::CollSeq { dest } => (*dest, 0, 0, 0),
+
+            // Advanced cursor
+            Insn::ReopenIdx {
+                cursor,
+                root,
+                db_num,
+                flags,
+            } => (*cursor, *root, *db_num, *flags),
+            Insn::CursorHint { cursor } => (*cursor, 0, 0, 0),
+
+            // Table locking
+            Insn::TableLock {
+                db_num,
+                root,
+                write,
+            } => (*db_num, *root, *write, 0),
+
+            // Integrity check
+            Insn::IntegrityCk {
+                msg_reg,
+                count,
+                err_reg,
+                db_num,
+            } => (*msg_reg, *count, *err_reg, *db_num),
+
+            // Triggers
+            Insn::Program {
+                target,
+                runtime_reg,
+                flags,
+            } => (0, *target, *runtime_reg, *flags),
+            Insn::Param { index, dest } => (*index, *dest, 0, 0),
+
             // Raw
             Insn::Raw { p1, p2, p3, p5, .. } => (*p1, *p2, *p3, *p5),
         }
@@ -3953,6 +4172,27 @@ impl Insn {
 
             // Comparison
             Insn::ElseEq { .. } => "ElseEq",
+
+            // Advanced comparison
+            Insn::Permutation => "Permutation",
+            Insn::Compare { .. } => "Compare",
+
+            // Collation
+            Insn::CollSeq { .. } => "CollSeq",
+
+            // Advanced cursor
+            Insn::ReopenIdx { .. } => "ReopenIdx",
+            Insn::CursorHint { .. } => "CursorHint",
+
+            // Table locking
+            Insn::TableLock { .. } => "TableLock",
+
+            // Integrity check
+            Insn::IntegrityCk { .. } => "IntegrityCk",
+
+            // Triggers
+            Insn::Program { .. } => "Program",
+            Insn::Param { .. } => "Param",
 
             Insn::Raw { .. } => "Raw",
         }

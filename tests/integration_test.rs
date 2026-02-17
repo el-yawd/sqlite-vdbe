@@ -6015,3 +6015,420 @@ fn test_else_eq_raw_opcode() {
 fn test_else_eq_display() {
     assert_eq!(format!("{}", Insn::ElseEq { target: 5 }), "ElseEq");
 }
+
+// ============================================================================
+// Advanced Comparison Tests (Permutation, Compare)
+// ============================================================================
+
+#[test]
+fn test_permutation_instruction_exists() {
+    let _ = Insn::Permutation;
+    assert_eq!(Insn::Permutation.name(), "Permutation");
+}
+
+#[test]
+fn test_permutation_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(Insn::Permutation.raw_opcode(), RawOpcode::Permutation as u8);
+}
+
+#[test]
+fn test_permutation_display() {
+    assert_eq!(format!("{}", Insn::Permutation), "Permutation");
+}
+
+#[test]
+fn test_compare_instruction_exists() {
+    let _ = Insn::Compare {
+        lhs: 1,
+        rhs: 5,
+        count: 3,
+        flags: 0,
+    };
+    assert_eq!(
+        Insn::Compare {
+            lhs: 1,
+            rhs: 5,
+            count: 3,
+            flags: 0
+        }
+        .name(),
+        "Compare"
+    );
+}
+
+#[test]
+fn test_compare_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::Compare {
+            lhs: 1,
+            rhs: 5,
+            count: 3,
+            flags: 0
+        }
+        .raw_opcode(),
+        RawOpcode::Compare as u8
+    );
+}
+
+#[test]
+fn test_compare_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::Compare {
+                lhs: 1,
+                rhs: 5,
+                count: 3,
+                flags: 0
+            }
+        ),
+        "Compare"
+    );
+}
+
+#[test]
+fn test_compare_with_permute_flag() {
+    // OPFLAG_PERMUTE = 0x01
+    let compare_with_permute = Insn::Compare {
+        lhs: 1,
+        rhs: 5,
+        count: 3,
+        flags: 0x01,
+    };
+    assert_eq!(compare_with_permute.name(), "Compare");
+}
+
+// ============================================================================
+// CollSeq Tests
+// ============================================================================
+
+#[test]
+fn test_collseq_instruction_exists() {
+    let _ = Insn::CollSeq { dest: 0 };
+    let _ = Insn::CollSeq { dest: 5 };
+    assert_eq!(Insn::CollSeq { dest: 0 }.name(), "CollSeq");
+}
+
+#[test]
+fn test_collseq_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::CollSeq { dest: 0 }.raw_opcode(),
+        RawOpcode::CollSeq as u8
+    );
+}
+
+#[test]
+fn test_collseq_display() {
+    assert_eq!(format!("{}", Insn::CollSeq { dest: 0 }), "CollSeq");
+}
+
+// ============================================================================
+// ReopenIdx Tests
+// ============================================================================
+
+#[test]
+fn test_reopen_idx_instruction_exists() {
+    let _ = Insn::ReopenIdx {
+        cursor: 0,
+        root: 2,
+        db_num: 0,
+        flags: 0,
+    };
+    assert_eq!(
+        Insn::ReopenIdx {
+            cursor: 0,
+            root: 2,
+            db_num: 0,
+            flags: 0
+        }
+        .name(),
+        "ReopenIdx"
+    );
+}
+
+#[test]
+fn test_reopen_idx_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::ReopenIdx {
+            cursor: 0,
+            root: 2,
+            db_num: 0,
+            flags: 0
+        }
+        .raw_opcode(),
+        RawOpcode::ReopenIdx as u8
+    );
+}
+
+#[test]
+fn test_reopen_idx_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::ReopenIdx {
+                cursor: 0,
+                root: 2,
+                db_num: 0,
+                flags: 0
+            }
+        ),
+        "ReopenIdx"
+    );
+}
+
+#[test]
+fn test_reopen_idx_with_seekeq_flag() {
+    // OPFLAG_SEEKEQ = 0x02
+    let reopen = Insn::ReopenIdx {
+        cursor: 1,
+        root: 5,
+        db_num: 0,
+        flags: 0x02,
+    };
+    assert_eq!(reopen.name(), "ReopenIdx");
+}
+
+// ============================================================================
+// CursorHint Tests
+// ============================================================================
+
+#[test]
+fn test_cursor_hint_instruction_exists() {
+    let _ = Insn::CursorHint { cursor: 0 };
+    assert_eq!(Insn::CursorHint { cursor: 0 }.name(), "CursorHint");
+}
+
+#[test]
+fn test_cursor_hint_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::CursorHint { cursor: 0 }.raw_opcode(),
+        RawOpcode::CursorHint as u8
+    );
+}
+
+#[test]
+fn test_cursor_hint_display() {
+    assert_eq!(format!("{}", Insn::CursorHint { cursor: 0 }), "CursorHint");
+}
+
+// ============================================================================
+// TableLock Tests
+// ============================================================================
+
+#[test]
+fn test_table_lock_instruction_exists() {
+    let _ = Insn::TableLock {
+        db_num: 0,
+        root: 2,
+        write: 0,
+    };
+    let _ = Insn::TableLock {
+        db_num: 0,
+        root: 2,
+        write: 1,
+    };
+    assert_eq!(
+        Insn::TableLock {
+            db_num: 0,
+            root: 2,
+            write: 0
+        }
+        .name(),
+        "TableLock"
+    );
+}
+
+#[test]
+fn test_table_lock_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::TableLock {
+            db_num: 0,
+            root: 2,
+            write: 0
+        }
+        .raw_opcode(),
+        RawOpcode::TableLock as u8
+    );
+}
+
+#[test]
+fn test_table_lock_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::TableLock {
+                db_num: 0,
+                root: 2,
+                write: 0
+            }
+        ),
+        "TableLock"
+    );
+}
+
+#[test]
+fn test_table_lock_read_vs_write() {
+    let read_lock = Insn::TableLock {
+        db_num: 0,
+        root: 2,
+        write: 0,
+    };
+    let write_lock = Insn::TableLock {
+        db_num: 0,
+        root: 2,
+        write: 1,
+    };
+    assert_eq!(read_lock.raw_opcode(), write_lock.raw_opcode());
+}
+
+// ============================================================================
+// IntegrityCk Tests
+// ============================================================================
+
+#[test]
+fn test_integrity_ck_instruction_exists() {
+    let _ = Insn::IntegrityCk {
+        msg_reg: 1,
+        count: 5,
+        err_reg: 2,
+        db_num: 0,
+    };
+    assert_eq!(
+        Insn::IntegrityCk {
+            msg_reg: 1,
+            count: 5,
+            err_reg: 2,
+            db_num: 0
+        }
+        .name(),
+        "IntegrityCk"
+    );
+}
+
+#[test]
+fn test_integrity_ck_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::IntegrityCk {
+            msg_reg: 1,
+            count: 5,
+            err_reg: 2,
+            db_num: 0
+        }
+        .raw_opcode(),
+        RawOpcode::IntegrityCk as u8
+    );
+}
+
+#[test]
+fn test_integrity_ck_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::IntegrityCk {
+                msg_reg: 1,
+                count: 5,
+                err_reg: 2,
+                db_num: 0
+            }
+        ),
+        "IntegrityCk"
+    );
+}
+
+// ============================================================================
+// Program Tests (Triggers)
+// ============================================================================
+
+#[test]
+fn test_program_instruction_exists() {
+    let _ = Insn::Program {
+        target: 10,
+        runtime_reg: 5,
+        flags: 0,
+    };
+    assert_eq!(
+        Insn::Program {
+            target: 10,
+            runtime_reg: 5,
+            flags: 0
+        }
+        .name(),
+        "Program"
+    );
+}
+
+#[test]
+fn test_program_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::Program {
+            target: 10,
+            runtime_reg: 5,
+            flags: 0
+        }
+        .raw_opcode(),
+        RawOpcode::Program as u8
+    );
+}
+
+#[test]
+fn test_program_display() {
+    assert_eq!(
+        format!(
+            "{}",
+            Insn::Program {
+                target: 10,
+                runtime_reg: 5,
+                flags: 0
+            }
+        ),
+        "Program"
+    );
+}
+
+// ============================================================================
+// Param Tests (Trigger Parameters)
+// ============================================================================
+
+#[test]
+fn test_param_instruction_exists() {
+    let _ = Insn::Param { index: 1, dest: 5 };
+    assert_eq!(Insn::Param { index: 1, dest: 5 }.name(), "Param");
+}
+
+#[test]
+fn test_param_raw_opcode() {
+    use sqlite_vdbe::RawOpcode;
+    assert_eq!(
+        Insn::Param { index: 1, dest: 5 }.raw_opcode(),
+        RawOpcode::Param as u8
+    );
+}
+
+#[test]
+fn test_param_display() {
+    assert_eq!(format!("{}", Insn::Param { index: 1, dest: 5 }), "Param");
+}
+
+#[test]
+fn test_param_debug() {
+    let param = Insn::Param { index: 3, dest: 7 };
+    let debug_str = format!("{:?}", param);
+    assert!(debug_str.contains("Param"));
+    assert!(debug_str.contains("index: 3"));
+    assert!(debug_str.contains("dest: 7"));
+}
+
+#[test]
+fn test_param_clone() {
+    let param = Insn::Param { index: 3, dest: 7 };
+    let cloned = param.clone();
+    assert_eq!(param.raw_opcode(), cloned.raw_opcode());
+}
