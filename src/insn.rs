@@ -1554,6 +1554,791 @@ pub enum Insn {
     },
 
     // =========================================================================
+    // Logical Operations
+    // =========================================================================
+
+    /// Take the logical AND of the values in registers P1 and P2 and write the
+    /// result into register P3.
+    ///
+    /// If either P1 or P2 is 0 (false) then the result is 0 even if the other
+    /// input is NULL. A NULL and true or two NULLs give a NULL output.
+    And {
+        /// First operand register
+        lhs: i32,
+        /// Second operand register
+        rhs: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Take the logical OR of the values in register P1 and P2 and store the
+    /// answer in register P3.
+    ///
+    /// If either P1 or P2 is nonzero (true) then the result is 1 (true) even if
+    /// the other input is NULL. A NULL and false or two NULLs give a NULL
+    /// output.
+    Or {
+        /// First operand register
+        lhs: i32,
+        /// Second operand register
+        rhs: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Type Operations
+    // =========================================================================
+
+    /// Force the value in register P1 to be the type defined by P2.
+    ///
+    /// P2 values: 'A' = BLOB, 'B' = TEXT, 'C' = NUMERIC, 'D' = INTEGER,
+    /// 'E' = REAL. A NULL value is not changed by this routine. It remains
+    /// NULL.
+    Cast {
+        /// Register to cast
+        src: i32,
+        /// Type affinity character
+        affinity: i32,
+    },
+
+    /// Apply affinities to a range of P2 registers starting with P1.
+    ///
+    /// P4 is a string that is P2 characters long. The N-th character of the
+    /// string indicates the column affinity that should be used for the N-th
+    /// memory cell in the range.
+    Affinity {
+        /// First register
+        start: i32,
+        /// Number of registers
+        count: i32,
+    },
+
+    /// If register P1 holds an integer convert it to a real value.
+    ///
+    /// This opcode is used when extracting information from a column that has
+    /// REAL affinity. Such column values may still be stored as integers, for
+    /// space efficiency, but after extraction we want them to have only a real
+    /// value.
+    RealAffinity {
+        /// Register to convert
+        src: i32,
+    },
+
+    /// Generate an error if the type of the content in register P1 does not
+    /// satisfy the type constraints given by P5.
+    TypeCheck {
+        /// Register to check
+        src: i32,
+        /// Type mask (P5)
+        type_mask: u16,
+    },
+
+    /// Jump to P2 if the type of a column in a btree is one of the types
+    /// specified by the P5 bitmask.
+    IsType {
+        /// Cursor number (P1, or -1 for register)
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// Column or register (P3)
+        column: i32,
+        /// Type bitmask
+        type_mask: u16,
+    },
+
+    /// Interpret the value in register P1 as a boolean value. Store that
+    /// boolean in register P2.
+    IsTrue {
+        /// Source register
+        src: i32,
+        /// Destination register
+        dest: i32,
+        /// Value for NULL
+        null_value: i32,
+    },
+
+    // =========================================================================
+    // Blob and String Operations
+    // =========================================================================
+
+    /// P4 points to a blob of data P1 bytes long. Store this blob in register
+    /// P2.
+    Blob {
+        /// Length of blob
+        len: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// The string value P4 of length P1 (bytes) is stored in register P2.
+    ///
+    /// If P3 is not zero and the content of register P3 is equal to P5, then
+    /// the datatype of the register P2 is converted to BLOB.
+    String {
+        /// Length of string
+        len: i32,
+        /// Destination register
+        dest: i32,
+        /// Optional blob conversion register
+        blob_reg: i32,
+    },
+
+    /// Transfer the values of bound parameter P1 into register P2.
+    Variable {
+        /// Parameter number (1-based)
+        param: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Null Operations
+    // =========================================================================
+
+    /// Set register P1 to have the value NULL as seen by the MakeRecord
+    /// instruction, but do not free any string or blob memory associated with
+    /// the register, so that if the value was a string or blob that was
+    /// previously copied, the copy will still work.
+    SoftNull {
+        /// Register to set
+        dest: i32,
+    },
+
+    /// If register P1 contains an integer, set register P2 to NULL. Otherwise,
+    /// set register P2 to the same value as register P1.
+    ///
+    /// If P3 is greater than zero, then also check register P3. If the content
+    /// of register P3 is NULL, then set register P2 to NULL and continue
+    /// immediately to the next opcode.
+    ZeroOrNull {
+        /// Source register
+        src: i32,
+        /// Destination register
+        dest: i32,
+        /// Optional NULL check register
+        null_check: i32,
+    },
+
+    /// Set all columns of the cursor P1 to be NULL values.
+    NullRow {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    // =========================================================================
+    // Subroutine Operations
+    // =========================================================================
+
+    /// Mark the beginning of a subroutine that can be entered in-line or that
+    /// can be called using Gosub.
+    ///
+    /// The subroutine should be terminated by a Return instruction that has a
+    /// P1 equal to the P1 of this opcode.
+    BeginSubrtn {
+        /// Subroutine return address register
+        return_reg: i32,
+        /// Jump target for direct entry
+        target: i32,
+    },
+
+    // =========================================================================
+    // Seek and Search Operations
+    // =========================================================================
+
+    /// If P4==0 then register P3 holds a blob constructed by MakeRecord. If
+    /// P4>0 then register P3 is the first of P4 registers that form an
+    /// unpacked record.
+    ///
+    /// Cursor P1 is on an index btree. If the record identified by P3 and P4 is
+    /// a prefix of any entry in P1 then a jump is made to P2.
+    Found {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if found
+        target: i32,
+        /// Key register
+        key: i32,
+        /// Number of key fields (0 = blob)
+        num_fields: i32,
+    },
+
+    /// If P4==0 then register P3 holds a blob constructed by MakeRecord. If
+    /// P4>0 then register P3 is the first of P4 registers that form an
+    /// unpacked record.
+    ///
+    /// Cursor P1 is on an index btree. If the record identified by P3 and P4 is
+    /// not the prefix of any entry in P1 then a jump is made to P2.
+    NotFound {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if not found
+        target: i32,
+        /// Key register
+        key: i32,
+        /// Number of key fields (0 = blob)
+        num_fields: i32,
+    },
+
+    /// P1 is the index of a cursor open on an SQL table btree (with integer
+    /// keys). P3 is an integer rowid. If P1 does not contain a record with
+    /// rowid P3 then jump immediately to P2.
+    NotExists {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if not exists
+        target: i32,
+        /// Rowid register
+        rowid: i32,
+    },
+
+    /// If P4==0 then register P3 holds a blob constructed by MakeRecord. If
+    /// P4>0 then register P3 is the first of P4 registers that form an
+    /// unpacked record.
+    ///
+    /// Cursor P1 is on an index btree. If the record identified by P3 and P4
+    /// contains any NULL value, jump immediately to P2. Otherwise, perform a
+    /// seek on cursor P1 to find an entry that matches all but the last field.
+    /// If any entries match, jump to P2. If there are no entries that match,
+    /// fall through.
+    NoConflict {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// Key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// This opcode is similar to NotFound with the following differences:
+    ///
+    /// 1. The cursor P1 is always a covering index cursor 2. If the cursor is
+    ///    positioned to a row that matches the key, control falls through
+    IfNoHope {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// Key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// If cursor P1 is not open or if P1 is set to a NULL row, then jump to
+    /// instruction P2. Otherwise, fall through.
+    IfNotOpen {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+    },
+
+    /// If all columns in the current row of cursor P1 are NULL, then set
+    /// register P3 to NULL and jump to P2. Otherwise, continue with the next
+    /// instruction.
+    IfNullRow {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// Register to set to NULL
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Index Comparison Operations
+    // =========================================================================
+
+    /// The P4 register values beginning with P3 form an unpacked index key that
+    /// omits the PRIMARY KEY. Compare this key value against the index that P1
+    /// is currently pointing to, ignoring the PRIMARY KEY.
+    ///
+    /// If the P1 index entry is greater than or equal to the key value then
+    /// jump to P2. Otherwise fall through to the next instruction.
+    IdxGE {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// First key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// The P4 register values beginning with P3 form an unpacked index key that
+    /// omits the PRIMARY KEY. Compare this key value against the index that P1
+    /// is currently pointing to, ignoring the PRIMARY KEY.
+    ///
+    /// If the P1 index entry is greater than the key value then jump to P2.
+    /// Otherwise fall through to the next instruction.
+    IdxGT {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// First key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// The P4 register values beginning with P3 form an unpacked index key that
+    /// omits the PRIMARY KEY. Compare this key value against the index that P1
+    /// is currently pointing to, ignoring the PRIMARY KEY.
+    ///
+    /// If the P1 index entry is less than or equal to the key value then jump
+    /// to P2. Otherwise fall through to the next instruction.
+    IdxLE {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// First key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// The P4 register values beginning with P3 form an unpacked index key that
+    /// omits the PRIMARY KEY. Compare this key value against the index that P1
+    /// is currently pointing to, ignoring the PRIMARY KEY.
+    ///
+    /// If the P1 index entry is less than the key value then jump to P2.
+    /// Otherwise fall through to the next instruction.
+    IdxLT {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// First key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    // =========================================================================
+    // Advanced Cursor Operations
+    // =========================================================================
+
+    /// Return in register P2 the next available pseudo-rowid for cursor P1.
+    Sequence {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// P1 is a sorter cursor. If the sequence counter is currently zero, jump
+    /// to P2. Regardless, increment the sequence counter.
+    SequenceTest {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+    },
+
+    /// Write into register P2 the complete row content for the current row of
+    /// cursor P1.
+    RowData {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// P1 is an open index cursor and P3 is a cursor on the corresponding
+    /// table. This opcode does a deferred seek of the P3 table cursor to the
+    /// row that corresponds to the current row of P1.
+    DeferredSeek {
+        /// Index cursor
+        cursor: i32,
+        /// Target address (unused)
+        target: i32,
+        /// Table cursor
+        table_cursor: i32,
+    },
+
+    /// If a deferred seek is pending on cursor P1, complete that seek now.
+    FinishSeek {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    /// Position cursor P1 at the end of the btree for the purpose of appending
+    /// a new entry onto the btree.
+    SeekEnd {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    /// Increase or decrease the seekHit value for cursor P1 by P2.
+    SeekHit {
+        /// Cursor number
+        cursor: i32,
+        /// Adjustment value
+        adjustment: i32,
+        /// New low value
+        low: i32,
+    },
+
+    /// This opcode is a prefix opcode to SeekGE. It restricts the range of
+    /// values that the subsequent SeekGE will consider.
+    SeekScan {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+    },
+
+    /// This opcode provides a hint to the cursor. P1 is the cursor number. P4
+    /// is a bit vector that describes the cursor columns that are actually
+    /// used.
+    ColumnsUsed {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    /// Open a new cursor P1 to the same table/index that cursor P2 is currently
+    /// pointing to.
+    OpenDup {
+        /// New cursor number
+        cursor: i32,
+        /// Existing cursor to duplicate
+        orig_cursor: i32,
+    },
+
+    /// Open a cursor P1 to a transient table that will be automatically deleted
+    /// when the cursor is closed. The cursor is on an automatically created
+    /// index.
+    OpenAutoindex {
+        /// Cursor number
+        cursor: i32,
+        /// Number of columns
+        num_columns: i32,
+    },
+
+    /// Open a new cursor that points to a fake table that contains a single row
+    /// of data. The content of that one row is the content of memory register
+    /// P2.
+    OpenPseudo {
+        /// Cursor number
+        cursor: i32,
+        /// Content register
+        content: i32,
+        /// Number of columns
+        num_columns: i32,
+    },
+
+    /// Copy the current record from cursor P1 into register P2.
+    RowCell {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    // =========================================================================
+    // Sorter Operations
+    // =========================================================================
+
+    /// Open a new sorter cursor on a transient index.
+    SorterOpen {
+        /// Cursor number
+        cursor: i32,
+        /// Number of columns
+        num_columns: i32,
+    },
+
+    /// After all records have been inserted into a sorter cursor, invoke this
+    /// opcode to actually perform the sort.
+    SorterSort {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if empty
+        target: i32,
+    },
+
+    /// This opcode does exactly the same thing as SorterSort, except for the
+    /// name. It exists because sometimes the Sort opcode appears naturally in
+    /// code generated for statements that require a sort.
+    Sort {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target if empty
+        target: i32,
+    },
+
+    /// Advance the sorter cursor P1 to the next entry. Jump to P2 if there are
+    /// no more entries.
+    SorterNext {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target for next entry
+        target: i32,
+    },
+
+    /// Write the current sorter key into register P2.
+    SorterData {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Write the P3 value into the sorter at cursor P1.
+    SorterInsert {
+        /// Cursor number
+        cursor: i32,
+        /// Key register
+        key: i32,
+    },
+
+    /// Compare the key in the sorter to the key constructed by the MakeRecord
+    /// from register P3.
+    SorterCompare {
+        /// Cursor number
+        cursor: i32,
+        /// Jump target
+        target: i32,
+        /// Key register
+        key: i32,
+        /// Number of key fields
+        num_fields: i32,
+    },
+
+    /// Delete all contents from the sorter at cursor P1.
+    ResetSorter {
+        /// Cursor number
+        cursor: i32,
+    },
+
+    // =========================================================================
+    // Foreign Key Operations
+    // =========================================================================
+
+    /// Invoke the foreign key check and return an error if there are any
+    /// outstanding foreign key constraint violations.
+    FkCheck,
+
+    /// Increment a "constraint counter" by P2 (P2 may be negative or positive).
+    /// If P1 is non-zero, the database constraint counter is incremented
+    /// (deferred foreign key constraints). Otherwise, if P1 is zero, the
+    /// statement counter is incremented (immediate foreign key constraints).
+    FkCounter {
+        /// Counter type (0=statement, non-zero=database)
+        counter_type: i32,
+        /// Amount to add
+        amount: i32,
+    },
+
+    /// This opcode tests if a foreign key constraint-counter is currently zero.
+    /// If so, jump to instruction P2. Otherwise, fall through to the next
+    /// instruction.
+    ///
+    /// If P1 is non-zero, then the jump is taken if the database constraint
+    /// counter is zero (the one incremented by deferred constraints). If P1 is
+    /// zero, the jump is taken if the statement constraint counter is zero.
+    FkIfZero {
+        /// Counter type (0=statement, non-zero=database)
+        counter_type: i32,
+        /// Jump target
+        target: i32,
+    },
+
+    // =========================================================================
+    // Transaction and Savepoint Operations
+    // =========================================================================
+
+    /// Begin a transaction on database P1 if a transaction is not already
+    /// active. If P2 is non-zero, then a write-transaction is started.
+    Transaction {
+        /// Database index
+        db_num: i32,
+        /// 0=read, non-zero=write
+        write: i32,
+    },
+
+    /// Open, release or rollback a savepoint.
+    ///
+    /// P1 is the savepoint operation: 0=SAVEPOINT, 1=RELEASE, 2=ROLLBACK.
+    /// P4 is the name of the savepoint.
+    Savepoint {
+        /// Operation (0=begin, 1=release, 2=rollback)
+        operation: i32,
+    },
+
+    /// Set the database auto-commit flag to P1 (1 or 0). If P2 is non-zero,
+    /// roll back any currently active transaction.
+    AutoCommit {
+        /// Auto-commit flag (0 or 1)
+        auto_commit: i32,
+        /// Rollback flag
+        rollback: i32,
+    },
+
+    /// Checkpoint database P1.
+    Checkpoint {
+        /// Database index
+        db_num: i32,
+        /// Checkpoint mode
+        mode: i32,
+    },
+
+    /// Query the journal mode of database P1 and store the result in register
+    /// P3.
+    JournalMode {
+        /// Database index
+        db_num: i32,
+        /// Jump target (unused)
+        target: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Run a complete VACUUM operation on the database.
+    Vacuum {
+        /// Database index
+        db_num: i32,
+    },
+
+    // =========================================================================
+    // Database Schema Operations
+    // =========================================================================
+
+    /// Allocate a new table in the main database if P1==0 or in the auxiliary
+    /// database if P1==1 or in the temp database if P1==2.
+    CreateBtree {
+        /// Database index
+        db_num: i32,
+        /// Destination register for root page
+        dest: i32,
+        /// Flags
+        flags: i32,
+    },
+
+    /// Run the SQL statement or statements specified in P4.
+    SqlExec {
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Read and parse all entries from the sqlite_schema table of database P1.
+    ParseSchema {
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Load the data for the ANALYZE results for database P1.
+    LoadAnalysis {
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Delete all information from the database table or index named P4.
+    Destroy {
+        /// Root page number
+        root_page: i32,
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Delete all records from the table identified by P1.
+    Clear {
+        /// Root page number
+        root_page: i32,
+        /// Database index
+        db_num: i32,
+        /// Reset rowid flag
+        reset_rowid: i32,
+    },
+
+    /// Remove the internal sqlite_schema entry for a table or index.
+    DropTable {
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Remove the internal sqlite_schema entry for an index.
+    DropIndex {
+        /// Database index
+        db_num: i32,
+    },
+
+    /// Remove the internal sqlite_schema entry for a trigger.
+    DropTrigger {
+        /// Database index
+        db_num: i32,
+    },
+
+    // =========================================================================
+    // Cookie Operations
+    // =========================================================================
+
+    /// Read cookie number P3 from database P1 and write it into register P2.
+    ReadCookie {
+        /// Database index
+        db_num: i32,
+        /// Destination register
+        dest: i32,
+        /// Cookie number
+        cookie: i32,
+    },
+
+    /// Write P3 into cookie number P2 of database P1.
+    SetCookie {
+        /// Database index
+        db_num: i32,
+        /// Cookie number
+        cookie: i32,
+        /// Value register
+        value: i32,
+    },
+
+    // =========================================================================
+    // Count and Statistics Operations
+    // =========================================================================
+
+    /// Store the number of entries (an integer value) in the table or index
+    /// opened by cursor P1 in register P2.
+    Count {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Return the current rowid offset of cursor P1 in register P2.
+    Offset {
+        /// Cursor number
+        cursor: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    /// Store the maximum number of pages in register P2, or the new max if P3
+    /// is positive.
+    MaxPgcnt {
+        /// Database index
+        db_num: i32,
+        /// Destination register
+        dest: i32,
+        /// New maximum (if positive)
+        new_max: i32,
+    },
+
+    /// Store the total number of pages in database P1 into register P2.
+    Pagecount {
+        /// Database index
+        db_num: i32,
+        /// Destination register
+        dest: i32,
+    },
+
+    // =========================================================================
     // Miscellaneous
     // =========================================================================
     /// Do nothing. Continue downward to the next opcode.
@@ -1691,6 +2476,105 @@ impl Insn {
 
             Insn::AggStep { .. } => RawOpcode::AggStep as u8,
             Insn::AggFinal { .. } => RawOpcode::AggFinal as u8,
+
+            // Logical
+            Insn::And { .. } => RawOpcode::And as u8,
+            Insn::Or { .. } => RawOpcode::Or as u8,
+
+            // Type operations
+            Insn::Cast { .. } => RawOpcode::Cast as u8,
+            Insn::Affinity { .. } => RawOpcode::Affinity as u8,
+            Insn::RealAffinity { .. } => RawOpcode::RealAffinity as u8,
+            Insn::TypeCheck { .. } => RawOpcode::TypeCheck as u8,
+            Insn::IsType { .. } => RawOpcode::IsType as u8,
+            Insn::IsTrue { .. } => RawOpcode::IsTrue as u8,
+
+            // Blob/String
+            Insn::Blob { .. } => RawOpcode::Blob as u8,
+            Insn::String { .. } => RawOpcode::String as u8,
+            Insn::Variable { .. } => RawOpcode::Variable as u8,
+
+            // Null operations
+            Insn::SoftNull { .. } => RawOpcode::SoftNull as u8,
+            Insn::ZeroOrNull { .. } => RawOpcode::ZeroOrNull as u8,
+            Insn::NullRow { .. } => RawOpcode::NullRow as u8,
+
+            // Subroutines
+            Insn::BeginSubrtn { .. } => RawOpcode::BeginSubrtn as u8,
+
+            // Seek/Search
+            Insn::Found { .. } => RawOpcode::Found as u8,
+            Insn::NotFound { .. } => RawOpcode::NotFound as u8,
+            Insn::NotExists { .. } => RawOpcode::NotExists as u8,
+            Insn::NoConflict { .. } => RawOpcode::NoConflict as u8,
+            Insn::IfNoHope { .. } => RawOpcode::IfNoHope as u8,
+            Insn::IfNotOpen { .. } => RawOpcode::IfNotOpen as u8,
+            Insn::IfNullRow { .. } => RawOpcode::IfNullRow as u8,
+
+            // Index comparisons
+            Insn::IdxGE { .. } => RawOpcode::IdxGE as u8,
+            Insn::IdxGT { .. } => RawOpcode::IdxGT as u8,
+            Insn::IdxLE { .. } => RawOpcode::IdxLE as u8,
+            Insn::IdxLT { .. } => RawOpcode::IdxLT as u8,
+
+            // Advanced cursor
+            Insn::Sequence { .. } => RawOpcode::Sequence as u8,
+            Insn::SequenceTest { .. } => RawOpcode::SequenceTest as u8,
+            Insn::RowData { .. } => RawOpcode::RowData as u8,
+            Insn::DeferredSeek { .. } => RawOpcode::DeferredSeek as u8,
+            Insn::FinishSeek { .. } => RawOpcode::FinishSeek as u8,
+            Insn::SeekEnd { .. } => RawOpcode::SeekEnd as u8,
+            Insn::SeekHit { .. } => RawOpcode::SeekHit as u8,
+            Insn::SeekScan { .. } => RawOpcode::SeekScan as u8,
+            Insn::ColumnsUsed { .. } => RawOpcode::ColumnsUsed as u8,
+            Insn::OpenDup { .. } => RawOpcode::OpenDup as u8,
+            Insn::OpenAutoindex { .. } => RawOpcode::OpenAutoindex as u8,
+            Insn::OpenPseudo { .. } => RawOpcode::OpenPseudo as u8,
+            Insn::RowCell { .. } => RawOpcode::RowCell as u8,
+
+            // Sorter
+            Insn::SorterOpen { .. } => RawOpcode::SorterOpen as u8,
+            Insn::SorterSort { .. } => RawOpcode::SorterSort as u8,
+            Insn::Sort { .. } => RawOpcode::Sort as u8,
+            Insn::SorterNext { .. } => RawOpcode::SorterNext as u8,
+            Insn::SorterData { .. } => RawOpcode::SorterData as u8,
+            Insn::SorterInsert { .. } => RawOpcode::SorterInsert as u8,
+            Insn::SorterCompare { .. } => RawOpcode::SorterCompare as u8,
+            Insn::ResetSorter { .. } => RawOpcode::ResetSorter as u8,
+
+            // Foreign keys
+            Insn::FkCheck => RawOpcode::FkCheck as u8,
+            Insn::FkCounter { .. } => RawOpcode::FkCounter as u8,
+            Insn::FkIfZero { .. } => RawOpcode::FkIfZero as u8,
+
+            // Transactions
+            Insn::Transaction { .. } => RawOpcode::Transaction as u8,
+            Insn::Savepoint { .. } => RawOpcode::Savepoint as u8,
+            Insn::AutoCommit { .. } => RawOpcode::AutoCommit as u8,
+            Insn::Checkpoint { .. } => RawOpcode::Checkpoint as u8,
+            Insn::JournalMode { .. } => RawOpcode::JournalMode as u8,
+            Insn::Vacuum { .. } => RawOpcode::Vacuum as u8,
+
+            // Schema
+            Insn::CreateBtree { .. } => RawOpcode::CreateBtree as u8,
+            Insn::SqlExec { .. } => RawOpcode::SqlExec as u8,
+            Insn::ParseSchema { .. } => RawOpcode::ParseSchema as u8,
+            Insn::LoadAnalysis { .. } => RawOpcode::LoadAnalysis as u8,
+            Insn::Destroy { .. } => RawOpcode::Destroy as u8,
+            Insn::Clear { .. } => RawOpcode::Clear as u8,
+            Insn::DropTable { .. } => RawOpcode::DropTable as u8,
+            Insn::DropIndex { .. } => RawOpcode::DropIndex as u8,
+            Insn::DropTrigger { .. } => RawOpcode::DropTrigger as u8,
+
+            // Cookies
+            Insn::ReadCookie { .. } => RawOpcode::ReadCookie as u8,
+            Insn::SetCookie { .. } => RawOpcode::SetCookie as u8,
+
+            // Statistics
+            Insn::Count { .. } => RawOpcode::Count as u8,
+            Insn::Offset { .. } => RawOpcode::Offset as u8,
+            Insn::MaxPgcnt { .. } => RawOpcode::MaxPgcnt as u8,
+            Insn::Pagecount { .. } => RawOpcode::Pagecount as u8,
 
             Insn::Noop => RawOpcode::Noop as u8,
             Insn::Explain => RawOpcode::Explain as u8,
@@ -1885,6 +2769,105 @@ impl Insn {
             } => (*args, 0, *accum, *num_args as u16),
             Insn::AggFinal { accum, num_args } => (*accum, *num_args, 0, 0),
 
+            // Logical
+            Insn::And { lhs, rhs, dest } => (*lhs, *rhs, *dest, 0),
+            Insn::Or { lhs, rhs, dest } => (*lhs, *rhs, *dest, 0),
+
+            // Type operations
+            Insn::Cast { src, affinity } => (*src, *affinity, 0, 0),
+            Insn::Affinity { start, count } => (*start, *count, 0, 0),
+            Insn::RealAffinity { src } => (*src, 0, 0, 0),
+            Insn::TypeCheck { src, type_mask } => (*src, 0, 0, *type_mask),
+            Insn::IsType { cursor, target, column, type_mask } => (*cursor, *target, *column, *type_mask),
+            Insn::IsTrue { src, dest, null_value } => (*src, *dest, *null_value, 0),
+
+            // Blob/String
+            Insn::Blob { len, dest } => (*len, *dest, 0, 0),
+            Insn::String { len, dest, blob_reg } => (*len, *dest, *blob_reg, 0),
+            Insn::Variable { param, dest } => (*param, *dest, 0, 0),
+
+            // Null operations
+            Insn::SoftNull { dest } => (*dest, 0, 0, 0),
+            Insn::ZeroOrNull { src, dest, null_check } => (*src, *dest, *null_check, 0),
+            Insn::NullRow { cursor } => (*cursor, 0, 0, 0),
+
+            // Subroutines
+            Insn::BeginSubrtn { return_reg, target } => (*return_reg, *target, 0, 0),
+
+            // Seek/Search
+            Insn::Found { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::NotFound { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::NotExists { cursor, target, rowid } => (*cursor, *target, *rowid, 0),
+            Insn::NoConflict { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IfNoHope { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IfNotOpen { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::IfNullRow { cursor, target, dest } => (*cursor, *target, *dest, 0),
+
+            // Index comparisons
+            Insn::IdxGE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxGT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxLE { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::IdxLT { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+
+            // Advanced cursor
+            Insn::Sequence { cursor, dest } => (*cursor, *dest, 0, 0),
+            Insn::SequenceTest { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::RowData { cursor, dest } => (*cursor, *dest, 0, 0),
+            Insn::DeferredSeek { cursor, target, table_cursor } => (*cursor, *target, *table_cursor, 0),
+            Insn::FinishSeek { cursor } => (*cursor, 0, 0, 0),
+            Insn::SeekEnd { cursor } => (*cursor, 0, 0, 0),
+            Insn::SeekHit { cursor, adjustment, low } => (*cursor, *adjustment, *low, 0),
+            Insn::SeekScan { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::ColumnsUsed { cursor } => (*cursor, 0, 0, 0),
+            Insn::OpenDup { cursor, orig_cursor } => (*cursor, *orig_cursor, 0, 0),
+            Insn::OpenAutoindex { cursor, num_columns } => (*cursor, *num_columns, 0, 0),
+            Insn::OpenPseudo { cursor, content, num_columns } => (*cursor, *content, *num_columns, 0),
+            Insn::RowCell { cursor, dest } => (*cursor, *dest, 0, 0),
+
+            // Sorter
+            Insn::SorterOpen { cursor, num_columns } => (*cursor, *num_columns, 0, 0),
+            Insn::SorterSort { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::Sort { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::SorterNext { cursor, target } => (*cursor, *target, 0, 0),
+            Insn::SorterData { cursor, dest } => (*cursor, *dest, 0, 0),
+            Insn::SorterInsert { cursor, key } => (*cursor, *key, 0, 0),
+            Insn::SorterCompare { cursor, target, key, num_fields } => (*cursor, *target, *key, *num_fields as u16),
+            Insn::ResetSorter { cursor } => (*cursor, 0, 0, 0),
+
+            // Foreign keys
+            Insn::FkCheck => (0, 0, 0, 0),
+            Insn::FkCounter { counter_type, amount } => (*counter_type, *amount, 0, 0),
+            Insn::FkIfZero { counter_type, target } => (*counter_type, *target, 0, 0),
+
+            // Transactions
+            Insn::Transaction { db_num, write } => (*db_num, *write, 0, 0),
+            Insn::Savepoint { operation } => (*operation, 0, 0, 0),
+            Insn::AutoCommit { auto_commit, rollback } => (*auto_commit, *rollback, 0, 0),
+            Insn::Checkpoint { db_num, mode } => (*db_num, *mode, 0, 0),
+            Insn::JournalMode { db_num, target, dest } => (*db_num, *target, *dest, 0),
+            Insn::Vacuum { db_num } => (*db_num, 0, 0, 0),
+
+            // Schema
+            Insn::CreateBtree { db_num, dest, flags } => (*db_num, *dest, *flags, 0),
+            Insn::SqlExec { db_num } => (*db_num, 0, 0, 0),
+            Insn::ParseSchema { db_num } => (*db_num, 0, 0, 0),
+            Insn::LoadAnalysis { db_num } => (*db_num, 0, 0, 0),
+            Insn::Destroy { root_page, db_num } => (*root_page, *db_num, 0, 0),
+            Insn::Clear { root_page, db_num, reset_rowid } => (*root_page, *db_num, *reset_rowid, 0),
+            Insn::DropTable { db_num } => (*db_num, 0, 0, 0),
+            Insn::DropIndex { db_num } => (*db_num, 0, 0, 0),
+            Insn::DropTrigger { db_num } => (*db_num, 0, 0, 0),
+
+            // Cookies
+            Insn::ReadCookie { db_num, dest, cookie } => (*db_num, *dest, *cookie, 0),
+            Insn::SetCookie { db_num, cookie, value } => (*db_num, *cookie, *value, 0),
+
+            // Statistics
+            Insn::Count { cursor, dest } => (*cursor, *dest, 0, 0),
+            Insn::Offset { cursor, dest } => (*cursor, *dest, 0, 0),
+            Insn::MaxPgcnt { db_num, dest, new_max } => (*db_num, *dest, *new_max, 0),
+            Insn::Pagecount { db_num, dest } => (*db_num, *dest, 0, 0),
+
             // Misc
             Insn::Noop => (0, 0, 0, 0),
             Insn::Explain => (0, 0, 0, 0),
@@ -1984,6 +2967,106 @@ impl Insn {
             Insn::EndCoroutine { .. } => "EndCoroutine",
             Insn::AggStep { .. } => "AggStep",
             Insn::AggFinal { .. } => "AggFinal",
+
+            // Logical
+            Insn::And { .. } => "And",
+            Insn::Or { .. } => "Or",
+
+            // Type operations
+            Insn::Cast { .. } => "Cast",
+            Insn::Affinity { .. } => "Affinity",
+            Insn::RealAffinity { .. } => "RealAffinity",
+            Insn::TypeCheck { .. } => "TypeCheck",
+            Insn::IsType { .. } => "IsType",
+            Insn::IsTrue { .. } => "IsTrue",
+
+            // Blob/String
+            Insn::Blob { .. } => "Blob",
+            Insn::String { .. } => "String",
+            Insn::Variable { .. } => "Variable",
+
+            // Null operations
+            Insn::SoftNull { .. } => "SoftNull",
+            Insn::ZeroOrNull { .. } => "ZeroOrNull",
+            Insn::NullRow { .. } => "NullRow",
+
+            // Subroutines
+            Insn::BeginSubrtn { .. } => "BeginSubrtn",
+
+            // Seek/Search
+            Insn::Found { .. } => "Found",
+            Insn::NotFound { .. } => "NotFound",
+            Insn::NotExists { .. } => "NotExists",
+            Insn::NoConflict { .. } => "NoConflict",
+            Insn::IfNoHope { .. } => "IfNoHope",
+            Insn::IfNotOpen { .. } => "IfNotOpen",
+            Insn::IfNullRow { .. } => "IfNullRow",
+
+            // Index comparisons
+            Insn::IdxGE { .. } => "IdxGE",
+            Insn::IdxGT { .. } => "IdxGT",
+            Insn::IdxLE { .. } => "IdxLE",
+            Insn::IdxLT { .. } => "IdxLT",
+
+            // Advanced cursor
+            Insn::Sequence { .. } => "Sequence",
+            Insn::SequenceTest { .. } => "SequenceTest",
+            Insn::RowData { .. } => "RowData",
+            Insn::DeferredSeek { .. } => "DeferredSeek",
+            Insn::FinishSeek { .. } => "FinishSeek",
+            Insn::SeekEnd { .. } => "SeekEnd",
+            Insn::SeekHit { .. } => "SeekHit",
+            Insn::SeekScan { .. } => "SeekScan",
+            Insn::ColumnsUsed { .. } => "ColumnsUsed",
+            Insn::OpenDup { .. } => "OpenDup",
+            Insn::OpenAutoindex { .. } => "OpenAutoindex",
+            Insn::OpenPseudo { .. } => "OpenPseudo",
+            Insn::RowCell { .. } => "RowCell",
+
+            // Sorter
+            Insn::SorterOpen { .. } => "SorterOpen",
+            Insn::SorterSort { .. } => "SorterSort",
+            Insn::Sort { .. } => "Sort",
+            Insn::SorterNext { .. } => "SorterNext",
+            Insn::SorterData { .. } => "SorterData",
+            Insn::SorterInsert { .. } => "SorterInsert",
+            Insn::SorterCompare { .. } => "SorterCompare",
+            Insn::ResetSorter { .. } => "ResetSorter",
+
+            // Foreign keys
+            Insn::FkCheck => "FkCheck",
+            Insn::FkCounter { .. } => "FkCounter",
+            Insn::FkIfZero { .. } => "FkIfZero",
+
+            // Transactions
+            Insn::Transaction { .. } => "Transaction",
+            Insn::Savepoint { .. } => "Savepoint",
+            Insn::AutoCommit { .. } => "AutoCommit",
+            Insn::Checkpoint { .. } => "Checkpoint",
+            Insn::JournalMode { .. } => "JournalMode",
+            Insn::Vacuum { .. } => "Vacuum",
+
+            // Schema
+            Insn::CreateBtree { .. } => "CreateBtree",
+            Insn::SqlExec { .. } => "SqlExec",
+            Insn::ParseSchema { .. } => "ParseSchema",
+            Insn::LoadAnalysis { .. } => "LoadAnalysis",
+            Insn::Destroy { .. } => "Destroy",
+            Insn::Clear { .. } => "Clear",
+            Insn::DropTable { .. } => "DropTable",
+            Insn::DropIndex { .. } => "DropIndex",
+            Insn::DropTrigger { .. } => "DropTrigger",
+
+            // Cookies
+            Insn::ReadCookie { .. } => "ReadCookie",
+            Insn::SetCookie { .. } => "SetCookie",
+
+            // Statistics
+            Insn::Count { .. } => "Count",
+            Insn::Offset { .. } => "Offset",
+            Insn::MaxPgcnt { .. } => "MaxPgcnt",
+            Insn::Pagecount { .. } => "Pagecount",
+
             Insn::Noop => "Noop",
             Insn::Explain => "Explain",
             Insn::Raw { .. } => "Raw",
