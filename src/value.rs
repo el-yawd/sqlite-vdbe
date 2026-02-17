@@ -2,8 +2,10 @@
 
 /// A SQLite value that can be stored in a VDBE register or returned as a result
 #[derive(Debug, Clone, PartialEq)]
+#[derive(Default)]
 pub enum Value {
     /// NULL value
+    #[default]
     Null,
     /// 64-bit signed integer
     Integer(i64),
@@ -108,11 +110,6 @@ impl Value {
     }
 }
 
-impl Default for Value {
-    fn default() -> Self {
-        Value::Null
-    }
-}
 
 // Conversion from primitive types
 impl From<i64> for Value {

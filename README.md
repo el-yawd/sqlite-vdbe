@@ -117,7 +117,3 @@ cargo test -- --test-threads=1
 
 - A C compiler (cc)
 - curl or wget (for downloading SQLite)
-
-## License
-
-MIT OR Apache-2.0

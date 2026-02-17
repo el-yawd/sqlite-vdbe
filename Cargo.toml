@@ -1,11 +1,11 @@
 [package]
-name = "sqlite-vdbe"
-version = "0.1.0"
-edition = "2021"
+name = "sqlite_vdbe"
+version = "0.0.1"
+edition = "2024"
 description = "Low-level access to SQLite's VDBE bytecode engine"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 readme = "README.md"
-repository = "https://github.com/user/sqlite-vdbe"
+repository = "https://github.com/el-yawd/sqlite-vdbe"
 keywords = ["sqlite", "vdbe", "bytecode", "database"]
 categories = ["database", "api-bindings"]
 

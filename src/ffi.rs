@@ -114,7 +114,7 @@ pub const SQLITE_TEXT: c_int = 3;
 pub const SQLITE_BLOB: c_int = 4;
 pub const SQLITE_NULL: c_int = 5;
 
-extern "C" {
+unsafe extern "C" {
     // =========================================================================
     // Library initialization
     // =========================================================================
@@ -209,13 +209,7 @@ extern "C" {
 
     pub fn sqlite3VdbeAddOp2(p: *mut Vdbe, op: c_int, p1: c_int, p2: c_int) -> c_int;
 
-    pub fn sqlite3VdbeAddOp3(
-        p: *mut Vdbe,
-        op: c_int,
-        p1: c_int,
-        p2: c_int,
-        p3: c_int,
-    ) -> c_int;
+    pub fn sqlite3VdbeAddOp3(p: *mut Vdbe, op: c_int, p1: c_int, p2: c_int, p3: c_int) -> c_int;
 
     pub fn sqlite3VdbeAddOp4(
         p: *mut Vdbe,

@@ -93,11 +93,11 @@ fn download_amalgamation(dest_dir: &PathBuf) -> io::Result<()> {
     // Extract the zip
     let cursor = Cursor::new(zip_data);
     let mut archive = zip::ZipArchive::new(cursor)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(io::Error::other)?;
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            .map_err(io::Error::other)?;
 
         let name = file.name().to_string();
         if name.ends_with("sqlite3.c") || name.ends_with("sqlite3.h") {
@@ -138,8 +138,7 @@ fn download_url(url: &str) -> io::Result<Vec<u8>> {
                 Ok(output) if output.status.success() => {
                     Ok(output.stdout)
                 }
-                _ => Err(io::Error::new(
-                    io::ErrorKind::Other,
+                _ => Err(io::Error::other(
                     "Failed to download SQLite. Please install curl or wget, \
                      or manually download the amalgamation from https://sqlite.org/download.html"
                 ))

@@ -251,9 +251,7 @@ pub enum Insn {
     // Constants - Load values into registers
     // =========================================================================
 
-    /// Load a 32-bit integer constant into a register
-    ///
-    /// `dest = value`
+    /// The 32-bit integer value P1 is written into register P2.
     Integer {
         /// The integer value to store
         value: i32,
@@ -261,9 +259,8 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Load a 64-bit integer constant into a register
-    ///
-    /// `dest = value`
+    /// P4 is a pointer to a 64-bit integer value. Write that value into
+    /// register P2.
     Int64 {
         /// The integer value to store (in P4)
         value: i64,
@@ -271,9 +268,8 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Load a floating-point constant into a register
-    ///
-    /// `dest = value`
+    /// P4 is a pointer to a 64-bit floating point value. Write that value into
+    /// register P2.
     Real {
         /// The floating-point value to store (in P4)
         value: f64,
@@ -281,9 +277,10 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Load a string constant into a register
-    ///
-    /// `dest = value`
+    /// P4 points to a nul terminated UTF-8 string. This opcode is transformed
+    /// into a String opcode before it is executed for the first time. During
+    /// this transformation, the length of string P4 is computed and stored as
+    /// the P1 parameter.
     String8 {
         /// The string value to store (in P4)
         value: String,
@@ -291,10 +288,14 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Set registers to NULL
+    /// Write a NULL into registers P2. If P3 greater than P2, then also write
+    /// NULL into register P3 and every register in between P2 and P3. If P3 is
+    /// less than P2 (typically P3 is zero) then only register P2 is set to
+    /// NULL.
     ///
-    /// Sets `dest` to NULL. If `count` > 1, sets registers `dest` through
-    /// `dest + count - 1` to NULL.
+    /// If the P1 value is non-zero, then also set the MEM_Cleared flag so that
+    /// NULL values will not compare equal even if SQLITE_NULLEQ is set on Ne or
+    /// Eq.
     Null {
         /// First register to set to NULL
         dest: i32,
@@ -306,9 +307,8 @@ pub enum Insn {
     // Arithmetic - Binary operations on registers
     // =========================================================================
 
-    /// Add two registers
-    ///
-    /// `dest = lhs + rhs`
+    /// Add the value in register P1 to the value in register P2 and store the
+    /// result in register P3. If either input is NULL, the result is NULL.
     Add {
         /// Left operand register
         lhs: i32,
@@ -318,12 +318,9 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Subtract two registers
-    ///
-    /// `dest = lhs - rhs`
-    ///
-    /// Note: Maps to SQLite's OP_Subtract where P2-P1 is computed,
-    /// so we swap the parameters internally.
+    /// Subtract the value in register P1 from the value in register P2 and
+    /// store the result in register P3. If either input is NULL, the result is
+    /// NULL.
     Subtract {
         /// Left operand register (minuend)
         lhs: i32,
@@ -333,9 +330,8 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Multiply two registers
-    ///
-    /// `dest = lhs * rhs`
+    /// Multiply the value in register P1 by the value in register P2 and store
+    /// the result in register P3. If either input is NULL, the result is NULL.
     Multiply {
         /// Left operand register
         lhs: i32,
@@ -345,11 +341,10 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Divide two registers
-    ///
-    /// `dest = lhs / rhs`
-    ///
-    /// Returns NULL if rhs is zero.
+    /// Divide the value in register P1 by the value in register P2 and store
+    /// the result in register P3 (P3=P2/P1). If the value in register P1 is
+    /// zero, then the result is NULL. If either input is NULL, the result is
+    /// NULL.
     Divide {
         /// Dividend register (numerator)
         lhs: i32,
@@ -359,9 +354,9 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Compute remainder (modulo)
-    ///
-    /// `dest = lhs % rhs`
+    /// Compute the remainder after integer register P2 is divided by register
+    /// P1 and store the result in register P3. If the value in register P1 is
+    /// zero the result is NULL. If either operand is NULL, the result is NULL.
     Remainder {
         /// Dividend register
         lhs: i32,
@@ -371,9 +366,14 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Concatenate two strings
+    /// Add the text in register P1 onto the end of the text in register P2 and
+    /// store the result in register P3. If either the P1 or P2 text are NULL
+    /// then store NULL in P3.
     ///
-    /// `dest = lhs || rhs`
+    /// P3 = P2 || P1
+    ///
+    /// It is illegal for P1 and P3 to be the same register. Sometimes, if P3 is
+    /// the same register as P2, the implementation is able to avoid a memcpy().
     Concat {
         /// Left string register
         lhs: i32,
@@ -387,45 +387,43 @@ pub enum Insn {
     // Bitwise Operations
     // =========================================================================
 
-    /// Bitwise AND
-    ///
-    /// `dest = lhs & rhs`
+    /// Take the bit-wise AND of the values in register P1 and P2 and store the
+    /// result in register P3. If either input is NULL, the result is NULL.
     BitAnd {
         lhs: i32,
         rhs: i32,
         dest: i32,
     },
 
-    /// Bitwise OR
-    ///
-    /// `dest = lhs | rhs`
+    /// Take the bit-wise OR of the values in register P1 and P2 and store the
+    /// result in register P3. If either input is NULL, the result is NULL.
     BitOr {
         lhs: i32,
         rhs: i32,
         dest: i32,
     },
 
-    /// Left shift
-    ///
-    /// `dest = lhs << rhs`
+    /// Shift the integer value in register P2 to the left by the number of bits
+    /// specified by the integer in register P1. Store the result in register
+    /// P3. If either input is NULL, the result is NULL.
     ShiftLeft {
         lhs: i32,
         rhs: i32,
         dest: i32,
     },
 
-    /// Right shift
-    ///
-    /// `dest = lhs >> rhs`
+    /// Shift the integer value in register P2 to the right by the number of
+    /// bits specified by the integer in register P1. Store the result in
+    /// register P3. If either input is NULL, the result is NULL.
     ShiftRight {
         lhs: i32,
         rhs: i32,
         dest: i32,
     },
 
-    /// Bitwise NOT (one's complement)
-    ///
-    /// `dest = ~src`
+    /// Interpret the content of register P1 as an integer. Store the
+    /// ones-complement of the P1 value into register P2. If P1 holds a NULL
+    /// then store a NULL in P2.
     BitNot {
         /// Source register
         src: i32,
@@ -437,9 +435,9 @@ pub enum Insn {
     // Logical Operations
     // =========================================================================
 
-    /// Logical NOT
-    ///
-    /// `dest = NOT src`
+    /// Interpret the value in register P1 as a boolean value. Store the boolean
+    /// complement in register P2. If the value in register P1 is NULL, then a
+    /// NULL is stored in P2.
     Not {
         /// Source register
         src: i32,
@@ -447,9 +445,10 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Add immediate value to register
+    /// Add the constant P2 to the value in register P1. The result is always an
+    /// integer.
     ///
-    /// `dest += value`
+    /// To force any register to be an integer, just add 0.
     AddImm {
         /// Register to modify
         dest: i32,
@@ -461,9 +460,15 @@ pub enum Insn {
     // Register Operations - Copy and move values
     // =========================================================================
 
-    /// Deep copy a range of registers
+    /// Make a copy of registers P1..P1+P3 into registers P2..P2+P3.
     ///
-    /// Copies `count` registers starting at `src` to registers starting at `dest`.
+    /// If the 0x0002 bit of P5 is set then also clear the MEM_Subtype flag in
+    /// the destination. The 0x0001 bit of P5 indicates that this Copy opcode
+    /// cannot be merged. The 0x0001 bit is used by the query planner and does
+    /// not come into play during query execution.
+    ///
+    /// This instruction makes a deep copy of the value. A duplicate is made of
+    /// any string or blob constant. See also SCopy.
     Copy {
         /// Source register (first in range)
         src: i32,
@@ -473,9 +478,14 @@ pub enum Insn {
         count: i32,
     },
 
-    /// Shallow copy a register
+    /// Make a shallow copy of register P1 into register P2.
     ///
-    /// For strings and blobs, only the pointer is copied (not the data).
+    /// This instruction makes a shallow copy of the value. If the value is a
+    /// string or blob, then the copy is only a pointer to the original and
+    /// hence if the original changes so will the copy. Worse, if the original
+    /// is deallocated, the copy becomes invalid. Thus the program must
+    /// guarantee that the original will not change during the lifetime of the
+    /// copy. Use Copy to make a complete copy.
     SCopy {
         /// Source register
         src: i32,
@@ -483,9 +493,10 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Move registers (copy then clear source)
-    ///
-    /// Copies `count` registers from `src` to `dest`, then sets source registers to NULL.
+    /// Move the P3 values in register P1..P1+P3-1 over into registers
+    /// P2..P2+P3-1. Registers P1..P1+P3-1 are left holding a NULL. It is an
+    /// error for register ranges P1..P1+P3-1 and P2..P2+P3-1 to overlap. It is
+    /// an error for P3 to be less than 1.
     Move {
         /// Source register (first in range)
         src: i32,
@@ -495,9 +506,10 @@ pub enum Insn {
         count: i32,
     },
 
-    /// Copy integer value only
+    /// Transfer the integer value held in register P1 into register P2.
     ///
-    /// Like SCopy but specifically for integers.
+    /// This is an optimized version of SCopy that works only for integer
+    /// values.
     IntCopy {
         /// Source register
         src: i32,
@@ -509,14 +521,64 @@ pub enum Insn {
     // Control Flow
     // =========================================================================
 
-    /// Halt program execution
+    /// Exit immediately. All open cursors, etc are closed automatically.
     ///
-    /// Terminates the VDBE program. With no parameters, halts normally (success).
+    /// P1 is the result code returned by sqlite3_exec(), sqlite3_reset(), or
+    /// sqlite3_finalize(). For a normal halt, this should be SQLITE_OK (0). For
+    /// errors, it can be some other value. If P1!=0 then P2 will determine
+    /// whether or not to rollback the current transaction. Do not rollback if
+    /// P2==OE_Fail. Do the rollback if P2==OE_Rollback. If P2==OE_Abort, then
+    /// back out all changes that have occurred during this execution of the
+    /// VDBE, but do not rollback the transaction.
+    ///
+    /// If P3 is not zero and P4 is NULL, then P3 is a register that holds the
+    /// text of an error message.
+    ///
+    /// If P3 is zero and P4 is not null then the error message string is held
+    /// in P4.
+    ///
+    /// P5 is a value between 1 and 4, inclusive, then the P4 error message
+    /// string is modified as follows:
+    ///
+    /// 1: NOT NULL constraint failed: P4 2: UNIQUE constraint failed: P4 3:
+    /// CHECK constraint failed: P4 4: FOREIGN KEY constraint failed: P4
+    ///
+    /// If P3 is zero and P5 is not zero and P4 is NULL, then everything after
+    /// the ":" is omitted.
+    ///
+    /// There is an implied "Halt 0 0 0" instruction inserted at the very end of
+    /// every program. So a jump past the last instruction of the program is the
+    /// same as executing Halt.
     Halt,
 
-    /// Halt with error code
+    /// Exit immediately. All open cursors, etc are closed automatically.
     ///
-    /// Terminates with the specified error code and behavior.
+    /// P1 is the result code returned by sqlite3_exec(), sqlite3_reset(), or
+    /// sqlite3_finalize(). For a normal halt, this should be SQLITE_OK (0). For
+    /// errors, it can be some other value. If P1!=0 then P2 will determine
+    /// whether or not to rollback the current transaction. Do not rollback if
+    /// P2==OE_Fail. Do the rollback if P2==OE_Rollback. If P2==OE_Abort, then
+    /// back out all changes that have occurred during this execution of the
+    /// VDBE, but do not rollback the transaction.
+    ///
+    /// If P3 is not zero and P4 is NULL, then P3 is a register that holds the
+    /// text of an error message.
+    ///
+    /// If P3 is zero and P4 is not null then the error message string is held
+    /// in P4.
+    ///
+    /// P5 is a value between 1 and 4, inclusive, then the P4 error message
+    /// string is modified as follows:
+    ///
+    /// 1: NOT NULL constraint failed: P4 2: UNIQUE constraint failed: P4 3:
+    /// CHECK constraint failed: P4 4: FOREIGN KEY constraint failed: P4
+    ///
+    /// If P3 is zero and P5 is not zero and P4 is NULL, then everything after
+    /// the ":" is omitted.
+    ///
+    /// There is an implied "Halt 0 0 0" instruction inserted at the very end of
+    /// every program. So a jump past the last instruction of the program is the
+    /// same as executing Halt.
     HaltWithError {
         /// Error code (SQLITE_OK for normal halt)
         error_code: i32,
@@ -524,9 +586,10 @@ pub enum Insn {
         on_error: i32,
     },
 
-    /// Halt if register is NULL
-    ///
-    /// If the register is NULL, halt with an error.
+    /// Check the value in register P3. If it is NULL then Halt using parameter
+    /// P1, P2, and P4 as if this were a Halt instruction. If the value in
+    /// register P3 is not NULL, then this routine is a no-op. The P5 parameter
+    /// should be 1.
     HaltIfNull {
         /// Register to test
         src: i32,
@@ -536,17 +599,19 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Unconditional jump
+    /// An unconditional jump to address P2. The next instruction executed will
+    /// be the one at index P2 from the beginning of the program.
     ///
-    /// Jump to the specified address.
+    /// The P1 parameter is not actually used by this opcode. However, it is
+    /// sometimes set to 1 instead of 0 as a hint to the command-line shell that
+    /// this Goto is the bottom of a loop and that the lines from P2 down to the
+    /// current line should be indented for EXPLAIN output.
     Goto {
         /// Target instruction address
         target: i32,
     },
 
-    /// Call subroutine
-    ///
-    /// Save return address in `return_reg` and jump to `target`.
+    /// Write the current address onto register P1 and then jump to address P2.
     Gosub {
         /// Register to store return address
         return_reg: i32,
@@ -554,17 +619,32 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Return from subroutine
+    /// Jump to the address stored in register P1. If P1 is a return address
+    /// register, then this accomplishes a return from a subroutine.
     ///
-    /// Jump to the address stored in the register.
+    /// If P3 is 1, then the jump is only taken if register P1 holds an integer
+    /// values, otherwise execution falls through to the next opcode, and the
+    /// Return becomes a no-op. If P3 is 0, then register P1 must hold an
+    /// integer or else an assert() is raised. P3 should be set to 1 when this
+    /// opcode is used in combination with BeginSubrtn, and set to 0 otherwise.
+    ///
+    /// The value in register P1 is unchanged by this opcode.
+    ///
+    /// P2 is not used by the byte-code engine. However, if P2 is positive and
+    /// also less than the current address, then the "EXPLAIN" output formatter
+    /// in the CLI will indent all opcodes from the P2 opcode up to be not
+    /// including the current Return. P2 should be the first opcode in the
+    /// subroutine from which this opcode is returning. Thus the P2 value is a
+    /// byte-code indentation hint. See tag-20220407a in wherecode.c and
+    /// shell.c.
     Return {
         /// Register containing return address
         return_reg: i32,
     },
 
-    /// Jump if register is true (non-zero)
-    ///
-    /// If `src` contains a non-zero numeric value, jump to `target`.
+    /// Jump to P2 if the value in register P1 is true. The value is considered
+    /// true if it is numeric and non-zero. If the value in P1 is NULL then take
+    /// the jump if and only if P3 is non-zero.
     If {
         /// Register to test
         src: i32,
@@ -574,9 +654,9 @@ pub enum Insn {
         jump_if_null: bool,
     },
 
-    /// Jump if register is false (zero or NULL)
-    ///
-    /// If `src` contains zero or NULL, jump to `target`.
+    /// Jump to P2 if the value in register P1 is False. The value is considered
+    /// false if it has a numeric value of zero. If the value in P1 is NULL then
+    /// take the jump if and only if P3 is non-zero.
     IfNot {
         /// Register to test
         src: i32,
@@ -586,7 +666,7 @@ pub enum Insn {
         jump_if_null: bool,
     },
 
-    /// Jump if register is NULL
+    /// Jump to P2 if the value in register P1 is NULL.
     IsNull {
         /// Register to test
         src: i32,
@@ -594,7 +674,7 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if register is not NULL
+    /// Jump to P2 if the value in register P1 is not NULL.
     NotNull {
         /// Register to test
         src: i32,
@@ -602,20 +682,36 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Execute once per prepared statement
+    /// Fall through to the next instruction the first time this opcode is
+    /// encountered on each invocation of the byte-code program. Jump to P2 on
+    /// the second and all subsequent encounters during the same invocation.
     ///
-    /// On first execution, falls through. On subsequent executions, jumps to target.
+    /// Top-level programs determine first invocation by comparing the P1
+    /// operand against the P1 operand on the Init opcode at the beginning of
+    /// the program. If the P1 values differ, then fall through and make the P1
+    /// of this opcode equal to the P1 of Init. If P1 values are the same then
+    /// take the jump.
+    ///
+    /// For subprograms, there is a bitmask in the VdbeFrame that determines
+    /// whether or not the jump should be taken. The bitmask is necessary
+    /// because the self-altering code trick does not work for recursive
+    /// triggers.
+    ///
+    /// The P3 operand is not used directly by this opcode. However P3 is used
+    /// by the code generator as follows: If this opcode is the start of a
+    /// subroutine and that subroutine uses a Bloom filter, then P3 will be the
+    /// register that holds that Bloom filter. See tag-202407032019 in the
+    /// source code for implementation details.
     Once {
         /// Target address to jump to on subsequent executions
         target: i32,
     },
 
-    /// Three-way branch
+    /// Jump to the instruction at address P1, P2, or P3 depending on whether in
+    /// the most recent Compare instruction the P1 vector was less than, equal
+    /// to, or greater than the P2 vector, respectively.
     ///
-    /// Jump based on value in a register:
-    /// - If value < 0: jump to `neg`
-    /// - If value == 0: jump to `zero`
-    /// - If value > 0: jump to `pos`
+    /// This opcode must immediately follow an Compare opcode.
     Jump {
         /// Target if negative
         neg: i32,
@@ -629,9 +725,34 @@ pub enum Insn {
     // Comparison Operations - Compare and branch
     // =========================================================================
 
-    /// Jump if equal
+    /// Compare the values in register P1 and P3. If reg(P3)==reg(P1) then jump
+    /// to address P2.
     ///
-    /// Compare values in `lhs` and `rhs`, jump to `target` if equal.
+    /// The SQLITE_AFF_MASK portion of P5 must be an affinity character -
+    /// SQLITE_AFF_TEXT, SQLITE_AFF_INTEGER, and so forth. An attempt is made to
+    /// coerce both inputs according to this affinity before the comparison is
+    /// made. If the SQLITE_AFF_MASK is 0x00, then numeric affinity is used.
+    /// Note that the affinity conversions are stored back into the input
+    /// registers P1 and P3. So this opcode can cause persistent changes to
+    /// registers P1 and P3.
+    ///
+    /// Once any conversions have taken place, and neither value is NULL, the
+    /// values are compared. If both values are blobs then memcmp() is used to
+    /// determine the results of the comparison. If both values are text, then
+    /// the appropriate collating function specified in P4 is used to do the
+    /// comparison. If P4 is not specified then memcmp() is used to compare text
+    /// string. If both values are numeric, then a numeric comparison is used.
+    /// If the two values are of different types, then numbers are considered
+    /// less than strings and strings are considered less than blobs.
+    ///
+    /// If SQLITE_NULLEQ is set in P5 then the result of comparison is always
+    /// either true or false and is never NULL. If both operands are NULL then
+    /// the result of comparison is true. If either operand is NULL then the
+    /// result is false. If neither operand is NULL the result is the same as it
+    /// would be if the SQLITE_NULLEQ flag were omitted from P5.
+    ///
+    /// This opcode saves the result of comparison for use by the new Jump
+    /// opcode.
     Eq {
         /// Left operand register
         lhs: i32,
@@ -641,9 +762,9 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if not equal
-    ///
-    /// Compare values in `lhs` and `rhs`, jump to `target` if not equal.
+    /// This works just like the Eq opcode except that the jump is taken if the
+    /// operands in registers P1 and P3 are not equal. See the Eq opcode for
+    /// additional information.
     Ne {
         /// Left operand register
         lhs: i32,
@@ -653,9 +774,32 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if less than
+    /// Compare the values in register P1 and P3. If reg(P3)<reg(P1) then jump
+    /// to address P2.
     ///
-    /// Jump to `target` if `lhs < rhs`.
+    /// If the SQLITE_JUMPIFNULL bit of P5 is set and either reg(P1) or reg(P3)
+    /// is NULL then the take the jump. If the SQLITE_JUMPIFNULL bit is clear
+    /// then fall through if either operand is NULL.
+    ///
+    /// The SQLITE_AFF_MASK portion of P5 must be an affinity character -
+    /// SQLITE_AFF_TEXT, SQLITE_AFF_INTEGER, and so forth. An attempt is made to
+    /// coerce both inputs according to this affinity before the comparison is
+    /// made. If the SQLITE_AFF_MASK is 0x00, then numeric affinity is used.
+    /// Note that the affinity conversions are stored back into the input
+    /// registers P1 and P3. So this opcode can cause persistent changes to
+    /// registers P1 and P3.
+    ///
+    /// Once any conversions have taken place, and neither value is NULL, the
+    /// values are compared. If both values are blobs then memcmp() is used to
+    /// determine the results of the comparison. If both values are text, then
+    /// the appropriate collating function specified in P4 is used to do the
+    /// comparison. If P4 is not specified then memcmp() is used to compare text
+    /// string. If both values are numeric, then a numeric comparison is used.
+    /// If the two values are of different types, then numbers are considered
+    /// less than strings and strings are considered less than blobs.
+    ///
+    /// This opcode saves the result of comparison for use by the new Jump
+    /// opcode.
     Lt {
         /// Left operand register
         lhs: i32,
@@ -665,9 +809,9 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if less than or equal
-    ///
-    /// Jump to `target` if `lhs <= rhs`.
+    /// This works just like the Lt opcode except that the jump is taken if the
+    /// content of register P3 is less than or equal to the content of register
+    /// P1. See the Lt opcode for additional information.
     Le {
         /// Left operand register
         lhs: i32,
@@ -677,9 +821,9 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if greater than
-    ///
-    /// Jump to `target` if `lhs > rhs`.
+    /// This works just like the Lt opcode except that the jump is taken if the
+    /// content of register P3 is greater than the content of register P1. See
+    /// the Lt opcode for additional information.
     Gt {
         /// Left operand register
         lhs: i32,
@@ -689,9 +833,9 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Jump if greater than or equal
-    ///
-    /// Jump to `target` if `lhs >= rhs`.
+    /// This works just like the Lt opcode except that the jump is taken if the
+    /// content of register P3 is greater than or equal to the content of
+    /// register P1. See the Lt opcode for additional information.
     Ge {
         /// Left operand register
         lhs: i32,
@@ -705,9 +849,11 @@ pub enum Insn {
     // Register Tests
     // =========================================================================
 
-    /// Jump if register is positive
+    /// Register P1 must contain an integer. If the value of register P1 is 1 or
+    /// greater, subtract P3 from the value in P1 and jump to P2.
     ///
-    /// If `src > 0`, jump to `target`.
+    /// If the initial value of register P1 is less than 1, then the value is
+    /// unchanged and control passes through to the next instruction.
     IfPos {
         /// Register to test
         src: i32,
@@ -717,9 +863,10 @@ pub enum Insn {
         decrement: i32,
     },
 
-    /// Jump if register is not zero
-    ///
-    /// If `src != 0`, decrement and jump.
+    /// Register P1 must contain an integer. If the content of register P1 is
+    /// initially greater than zero, then decrement the value in register P1. If
+    /// it is non-zero (negative or positive) and then also jump to P2. If
+    /// register P1 is initially zero, leave it unchanged and fall through.
     IfNotZero {
         /// Register to test and decrement
         src: i32,
@@ -727,9 +874,8 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Decrement and jump if zero
-    ///
-    /// Decrement `src`, then jump to `target` if it becomes zero.
+    /// Register P1 must hold an integer. Decrement the value in P1 and jump to
+    /// P2 if the new value is exactly zero.
     DecrJumpZero {
         /// Register to decrement
         src: i32,
@@ -737,9 +883,10 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Force register to integer type
-    ///
-    /// If the register is not an integer, abort with an error.
+    /// Force the value in register P1 to be an integer. If the value in P1 is
+    /// not an integer and cannot be converted into an integer without data
+    /// loss, then jump immediately to P2, or if P2==0 raise an SQLITE_MISMATCH
+    /// exception.
     MustBeInt {
         /// Register to convert
         src: i32,
@@ -751,10 +898,10 @@ pub enum Insn {
     // Result Output
     // =========================================================================
 
-    /// Output a row of results
-    ///
-    /// Return the contents of registers `start` through `start + count - 1`
-    /// as a result row.
+    /// The registers P1 through P1+P2-1 contain a single row of results. This
+    /// opcode causes the sqlite3_step() call to terminate with an SQLITE_ROW
+    /// return code and it sets up the sqlite3_stmt structure to provide access
+    /// to the r(P1)..r(P1+P2-1) values as the result row.
     ResultRow {
         /// First register of result row
         start: i32,
@@ -766,7 +913,25 @@ pub enum Insn {
     // Cursor Operations - Database access
     // =========================================================================
 
-    /// Open a read-only cursor on a table or index
+    /// Open a read-only cursor for the database table whose root page is P2 in
+    /// a database file. The database file is determined by P3. P3==0 means the
+    /// main database, P3==1 means the database used for temporary tables, and
+    /// P3>1 means used the corresponding attached database. Give the new cursor
+    /// an identifier of P1. The P1 values need not be contiguous but all P1
+    /// values should be small integers. It is an error for P1 to be negative.
+    ///
+    /// Allowed P5 bits: 0x02 OPFLAG_SEEKEQ: This cursor will only be used for
+    /// equality lookups (implemented as a pair of opcodes SeekGE/IdxGT of
+    /// SeekLE/IdxLT)
+    ///
+    /// The P4 value may be either an integer (P4_INT32) or a pointer to a
+    /// KeyInfo structure (P4_KEYINFO). If it is a pointer to a KeyInfo object,
+    /// then table being opened must be an index b-tree where the KeyInfo object
+    /// defines the content and collating sequence of that index b-tree.
+    /// Otherwise, if P4 is an integer value, then the table being opened must
+    /// be a table b-tree with a number of columns no less than the value of P4.
+    ///
+    /// See also: OpenWrite, ReopenIdx
     OpenRead {
         /// Cursor number
         cursor: i32,
@@ -776,7 +941,30 @@ pub enum Insn {
         db_num: i32,
     },
 
-    /// Open a read/write cursor on a table or index
+    /// Open a read/write cursor named P1 on the table or index whose root page
+    /// is P2 (or whose root page is held in register P2 if the OPFLAG_P2ISREG
+    /// bit is set in P5 - see below).
+    ///
+    /// The P4 value may be either an integer (P4_INT32) or a pointer to a
+    /// KeyInfo structure (P4_KEYINFO). If it is a pointer to a KeyInfo object,
+    /// then table being opened must be an index b-tree where the KeyInfo object
+    /// defines the content and collating sequence of that index b-tree.
+    /// Otherwise, if P4 is an integer value, then the table being opened must
+    /// be a table b-tree with a number of columns no less than the value of P4.
+    ///
+    /// Allowed P5 bits: 0x02 OPFLAG_SEEKEQ: This cursor will only be used for
+    /// equality lookups (implemented as a pair of opcodes SeekGE/IdxGT of
+    /// SeekLE/IdxLT) 0x08 OPFLAG_FORDELETE: This cursor is used only to seek
+    /// and subsequently delete entries in an index btree. This is a hint to the
+    /// storage engine that the storage engine is allowed to ignore. The hint is
+    /// not used by the official SQLite b*tree storage engine, but is used by
+    /// COMDB2. 0x10 OPFLAG_P2ISREG: Use the content of register P2 as the root
+    /// page, not the value of P2 itself.
+    ///
+    /// This instruction works like OpenRead except that it opens the cursor in
+    /// read/write mode.
+    ///
+    /// See also: OpenRead, ReopenIdx
     OpenWrite {
         /// Cursor number
         cursor: i32,
@@ -786,7 +974,25 @@ pub enum Insn {
         db_num: i32,
     },
 
-    /// Open an ephemeral (temporary) table
+    /// Open a new cursor P1 to a transient table. The cursor is always opened
+    /// read/write even if the main database is read-only. The ephemeral table
+    /// is deleted automatically when the cursor is closed.
+    ///
+    /// If the cursor P1 is already opened on an ephemeral table, the table is
+    /// cleared (all content is erased).
+    ///
+    /// P2 is the number of columns in the ephemeral table. The cursor points to
+    /// a BTree table if P4==0 and to a BTree index if P4 is not 0. If P4 is not
+    /// NULL, it points to a KeyInfo structure that defines the format of keys
+    /// in the index.
+    ///
+    /// The P5 parameter can be a mask of the BTREE_* flags defined in btree.h.
+    /// These flags control aspects of the operation of the btree. The
+    /// BTREE_OMIT_JOURNAL and BTREE_SINGLE flags are added automatically.
+    ///
+    /// If P3 is positive, then reg[P3] is modified slightly so that it can be
+    /// used as zero-length data for Insert. This is an optimization that avoids
+    /// an extra Blob opcode to initialize that register.
     OpenEphemeral {
         /// Cursor number
         cursor: i32,
@@ -794,15 +1000,24 @@ pub enum Insn {
         num_columns: i32,
     },
 
-    /// Close a cursor
+    /// Close a cursor previously opened as P1. If P1 is not currently open,
+    /// this instruction is a no-op.
     Close {
         /// Cursor number to close
         cursor: i32,
     },
 
-    /// Position cursor at start of table
+    /// The next use of the Rowid or Column or Next instruction for P1 will
+    /// refer to the first entry in the database table or index. If the table or
+    /// index is empty, jump immediately to P2. If the table or index is not
+    /// empty, fall through to the following instruction.
     ///
-    /// If the table is empty, jump to `target`.
+    /// If P2 is zero, that is an assertion that the P1 table is never empty and
+    /// hence the jump will never be taken.
+    ///
+    /// This opcode leaves the cursor configured to move in forward order, from
+    /// the beginning toward the end. In other words, the cursor is configured
+    /// to use Next, not Prev.
     Rewind {
         /// Cursor number
         cursor: i32,
@@ -810,9 +1025,26 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Move cursor to next row
+    /// Advance cursor P1 so that it points to the next key/data pair in its
+    /// table or index. If there are no more key/value pairs then fall through
+    /// to the following instruction. But if the cursor advance was successful,
+    /// jump immediately to P2.
     ///
-    /// Advance cursor to next entry. If there is a next entry, jump to `target`.
+    /// The Next opcode is only valid following an SeekGT, SeekGE, or Rewind
+    /// opcode used to position the cursor. Next is not allowed to follow
+    /// SeekLT, SeekLE, or Last.
+    ///
+    /// The P1 cursor must be for a real table, not a pseudo-table. P1 must have
+    /// been opened prior to this opcode or the program will segfault.
+    ///
+    /// The P3 value is a hint to the btree implementation. If P3==1, that means
+    /// P1 is an SQL index and that this instruction could have been omitted if
+    /// that index had been unique. P3 is usually 0. P3 is always either 0 or 1.
+    ///
+    /// If P5 is positive and the jump is taken, then event counter number P5-1
+    /// in the prepared statement is incremented.
+    ///
+    /// See also: Prev
     Next {
         /// Cursor number
         cursor: i32,
@@ -820,9 +1052,24 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Move cursor to previous row
+    /// Back up cursor P1 so that it points to the previous key/data pair in its
+    /// table or index. If there is no previous key/value pairs then fall
+    /// through to the following instruction. But if the cursor backup was
+    /// successful, jump immediately to P2.
     ///
-    /// Move cursor to previous entry. If there is a previous entry, jump to `target`.
+    /// The Prev opcode is only valid following an SeekLT, SeekLE, or Last
+    /// opcode used to position the cursor. Prev is not allowed to follow
+    /// SeekGT, SeekGE, or Rewind.
+    ///
+    /// The P1 cursor must be for a real table, not a pseudo-table. If P1 is not
+    /// open then the behavior is undefined.
+    ///
+    /// The P3 value is a hint to the btree implementation. If P3==1, that means
+    /// P1 is an SQL index and that this instruction could have been omitted if
+    /// that index had been unique. P3 is usually 0. P3 is always either 0 or 1.
+    ///
+    /// If P5 is positive and the jump is taken, then event counter number P5-1
+    /// in the prepared statement is incremented.
     Prev {
         /// Cursor number
         cursor: i32,
@@ -830,9 +1077,15 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Position cursor at end of table
+    /// The next use of the Rowid or Column or Prev instruction for P1 will
+    /// refer to the last entry in the database table or index. If the table or
+    /// index is empty and P2>0, then jump immediately to P2. If P2 is 0 or if
+    /// the table or index is not empty, fall through to the following
+    /// instruction.
     ///
-    /// If the table is empty, jump to `target`.
+    /// This opcode leaves the cursor configured to move in reverse order, from
+    /// the end toward the beginning. In other words, the cursor is configured
+    /// to use Prev, not Next.
     Last {
         /// Cursor number
         cursor: i32,
@@ -840,7 +1093,29 @@ pub enum Insn {
         target: i32,
     },
 
-    /// Seek to row with key >= given key
+    /// If cursor P1 refers to an SQL table (B-Tree that uses integer keys), use
+    /// the value in register P3 as the key. If cursor P1 refers to an SQL
+    /// index, then P3 is the first in an array of P4 registers that are used as
+    /// an unpacked index key.
+    ///
+    /// Reposition cursor P1 so that it points to the smallest entry that is
+    /// greater than or equal to the key value. If there are no records greater
+    /// than or equal to the key and P2 is not zero, then jump to P2.
+    ///
+    /// If the cursor P1 was opened using the OPFLAG_SEEKEQ flag, then this
+    /// opcode will either land on a record that exactly matches the key, or
+    /// else it will cause a jump to P2. When the cursor is OPFLAG_SEEKEQ, this
+    /// opcode must be followed by an IdxLE opcode with the same arguments. The
+    /// IdxGT opcode will be skipped if this opcode succeeds, but the IdxGT
+    /// opcode will be used on subsequent loop iterations. The OPFLAG_SEEKEQ
+    /// flags is a hint to the btree layer to say that this is an equality
+    /// search.
+    ///
+    /// This opcode leaves the cursor configured to move in forward order, from
+    /// the beginning toward the end. In other words, the cursor is configured
+    /// to use Next, not Prev.
+    ///
+    /// See also: Found, NotFound, SeekLt, SeekGt, SeekLe
     SeekGE {
         /// Cursor number
         cursor: i32,
@@ -852,7 +1127,20 @@ pub enum Insn {
         num_fields: i32,
     },
 
-    /// Seek to row with key > given key
+    /// If cursor P1 refers to an SQL table (B-Tree that uses integer keys), use
+    /// the value in register P3 as a key. If cursor P1 refers to an SQL index,
+    /// then P3 is the first in an array of P4 registers that are used as an
+    /// unpacked index key.
+    ///
+    /// Reposition cursor P1 so that it points to the smallest entry that is
+    /// greater than the key value. If there are no records greater than the key
+    /// and P2 is not zero, then jump to P2.
+    ///
+    /// This opcode leaves the cursor configured to move in forward order, from
+    /// the beginning toward the end. In other words, the cursor is configured
+    /// to use Next, not Prev.
+    ///
+    /// See also: Found, NotFound, SeekLt, SeekGe, SeekLe
     SeekGT {
         /// Cursor number
         cursor: i32,
@@ -864,7 +1152,29 @@ pub enum Insn {
         num_fields: i32,
     },
 
-    /// Seek to row with key <= given key
+    /// If cursor P1 refers to an SQL table (B-Tree that uses integer keys), use
+    /// the value in register P3 as a key. If cursor P1 refers to an SQL index,
+    /// then P3 is the first in an array of P4 registers that are used as an
+    /// unpacked index key.
+    ///
+    /// Reposition cursor P1 so that it points to the largest entry that is less
+    /// than or equal to the key value. If there are no records less than or
+    /// equal to the key and P2 is not zero, then jump to P2.
+    ///
+    /// This opcode leaves the cursor configured to move in reverse order, from
+    /// the end toward the beginning. In other words, the cursor is configured
+    /// to use Prev, not Next.
+    ///
+    /// If the cursor P1 was opened using the OPFLAG_SEEKEQ flag, then this
+    /// opcode will either land on a record that exactly matches the key, or
+    /// else it will cause a jump to P2. When the cursor is OPFLAG_SEEKEQ, this
+    /// opcode must be followed by an IdxLE opcode with the same arguments. The
+    /// IdxGE opcode will be skipped if this opcode succeeds, but the IdxGE
+    /// opcode will be used on subsequent loop iterations. The OPFLAG_SEEKEQ
+    /// flags is a hint to the btree layer to say that this is an equality
+    /// search.
+    ///
+    /// See also: Found, NotFound, SeekGt, SeekGe, SeekLt
     SeekLE {
         /// Cursor number
         cursor: i32,
@@ -876,7 +1186,20 @@ pub enum Insn {
         num_fields: i32,
     },
 
-    /// Seek to row with key < given key
+    /// If cursor P1 refers to an SQL table (B-Tree that uses integer keys), use
+    /// the value in register P3 as a key. If cursor P1 refers to an SQL index,
+    /// then P3 is the first in an array of P4 registers that are used as an
+    /// unpacked index key.
+    ///
+    /// Reposition cursor P1 so that it points to the largest entry that is less
+    /// than the key value. If there are no records less than the key and P2 is
+    /// not zero, then jump to P2.
+    ///
+    /// This opcode leaves the cursor configured to move in reverse order, from
+    /// the end toward the beginning. In other words, the cursor is configured
+    /// to use Prev, not Next.
+    ///
+    /// See also: Found, NotFound, SeekGt, SeekGe, SeekLe
     SeekLT {
         /// Cursor number
         cursor: i32,
@@ -888,7 +1211,25 @@ pub enum Insn {
         num_fields: i32,
     },
 
-    /// Seek to specific rowid
+    /// P1 is the index of a cursor open on an SQL table btree (with integer
+    /// keys). If register P3 does not contain an integer or if P1 does not
+    /// contain a record with rowid P3 then jump immediately to P2. Or, if P2 is
+    /// 0, raise an SQLITE_CORRUPT error. If P1 does contain a record with rowid
+    /// P3 then leave the cursor pointing at that record and fall through to the
+    /// next instruction.
+    ///
+    /// The NotExists opcode performs the same operation, but with NotExists the
+    /// P3 register must be guaranteed to contain an integer value. With this
+    /// opcode, register P3 might not contain an integer.
+    ///
+    /// The NotFound opcode performs the same operation on index btrees (with
+    /// arbitrary multi-value keys).
+    ///
+    /// This opcode leaves the cursor in a state where it cannot be advanced in
+    /// either direction. In other words, the Next and Prev opcodes will not
+    /// work following this opcode.
+    ///
+    /// See also: Found, NotFound, NoConflict, SeekRowid
     SeekRowid {
         /// Cursor number
         cursor: i32,
@@ -898,7 +1239,24 @@ pub enum Insn {
         rowid: i32,
     },
 
-    /// Extract column from cursor row
+    /// Interpret the data that cursor P1 points to as a structure built using
+    /// the MakeRecord instruction. (See the MakeRecord opcode for additional
+    /// information about the format of the data.) Extract the P2-th column from
+    /// this record. If there are less than (P2+1) values in the record, extract
+    /// a NULL.
+    ///
+    /// The value extracted is stored in register P3.
+    ///
+    /// If the record contains fewer than P2 fields, then extract a NULL. Or, if
+    /// the P4 argument is a P4_MEM use the value of the P4 argument as the
+    /// result.
+    ///
+    /// If the OPFLAG_LENGTHARG bit is set in P5 then the result is guaranteed
+    /// to only be used by the length() function or the equivalent. The content
+    /// of large blobs is not loaded, thus saving CPU cycles. If the
+    /// OPFLAG_TYPEOFARG bit is set then the result will only be used by the
+    /// typeof() function or the IS NULL or IS NOT NULL operators or the
+    /// equivalent. In this case, all content loading can be omitted.
     Column {
         /// Cursor number
         cursor: i32,
@@ -908,7 +1266,12 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Get rowid of current cursor position
+    /// Store in register P2 an integer which is the key of the table entry that
+    /// P1 is currently point to.
+    ///
+    /// P1 can be either an ordinary table or a virtual table. There used to be
+    /// a separate OP_VRowid opcode for use with virtual tables, but this one
+    /// opcode now works for both table types.
     Rowid {
         /// Cursor number
         cursor: i32,
@@ -916,7 +1279,17 @@ pub enum Insn {
         dest: i32,
     },
 
-    /// Create a new rowid
+    /// Get a new integer record number (a.k.a "rowid") used as the key to a
+    /// table. The record number is not previously used as a key in the database
+    /// table that cursor P1 points to. The new record number is written written
+    /// to register P2.
+    ///
+    /// If P3>0 then P3 is a register in the root frame of this VDBE that holds
+    /// the largest previously generated record number. No new record numbers
+    /// are allowed to be less than this value. When this value reaches its
+    /// maximum, an SQLITE_FULL error is generated. The P3 register is updated
+    /// with the ' generated record number. This P3 mechanism is used to help
+    /// implement the AUTOINCREMENT feature.
     NewRowid {
         /// Cursor number
         cursor: i32,
@@ -926,7 +1299,37 @@ pub enum Insn {
         prev_rowid: i32,
     },
 
-    /// Insert a row
+    /// Write an entry into the table of cursor P1. A new entry is created if it
+    /// doesn't already exist or the data for an existing entry is overwritten.
+    /// The data is the value MEM_Blob stored in register number P2. The key is
+    /// stored in register P3. The key must be a MEM_Int.
+    ///
+    /// If the OPFLAG_NCHANGE flag of P5 is set, then the row change count is
+    /// incremented (otherwise not). If the OPFLAG_LASTROWID flag of P5 is set,
+    /// then rowid is stored for subsequent return by the
+    /// sqlite3_last_insert_rowid() function (otherwise it is unmodified).
+    ///
+    /// If the OPFLAG_USESEEKRESULT flag of P5 is set, the implementation might
+    /// run faster by avoiding an unnecessary seek on cursor P1. However, the
+    /// OPFLAG_USESEEKRESULT flag must only be set if there have been no prior
+    /// seeks on the cursor or if the most recent seek used a key equal to P3.
+    ///
+    /// If the OPFLAG_ISUPDATE flag is set, then this opcode is part of an
+    /// UPDATE operation. Otherwise (if the flag is clear) then this opcode is
+    /// part of an INSERT operation. The difference is only important to the
+    /// update hook.
+    ///
+    /// Parameter P4 may point to a Table structure, or may be NULL. If it is
+    /// not NULL, then the update-hook (sqlite3.xUpdateCallback) is invoked
+    /// following a successful insert.
+    ///
+    /// (WARNING/TODO: If P1 is a pseudo-cursor and P2 is dynamically allocated,
+    /// then ownership of P2 is transferred to the pseudo-cursor and register P2
+    /// becomes ephemeral. If the cursor is changed, the value of register P2
+    /// will then change. Make sure this does not cause any problems.)
+    ///
+    /// This instruction only works on tables. The equivalent instruction for
+    /// indices is IdxInsert.
     Insert {
         /// Cursor number
         cursor: i32,
@@ -936,13 +1339,70 @@ pub enum Insn {
         rowid: i32,
     },
 
-    /// Delete the row at cursor position
+    /// Delete the record at which the P1 cursor is currently pointing.
+    ///
+    /// If the OPFLAG_SAVEPOSITION bit of the P5 parameter is set, then the
+    /// cursor will be left pointing at either the next or the previous record
+    /// in the table. If it is left pointing at the next record, then the next
+    /// Next instruction will be a no-op. As a result, in this case it is ok to
+    /// delete a record from within a Next loop. If OPFLAG_SAVEPOSITION bit of
+    /// P5 is clear, then the cursor will be left in an undefined state.
+    ///
+    /// If the OPFLAG_AUXDELETE bit is set on P5, that indicates that this
+    /// delete is one of several associated with deleting a table row and all
+    /// its associated index entries. Exactly one of those deletes is the
+    /// "primary" delete. The others are all on OPFLAG_FORDELETE cursors or else
+    /// are marked with the AUXDELETE flag.
+    ///
+    /// If the OPFLAG_NCHANGE (0x01) flag of P2 (NB: P2 not P5) is set, then the
+    /// row change count is incremented (otherwise not).
+    ///
+    /// If the OPFLAG_ISNOOP (0x40) flag of P2 (not P5!) is set, then the
+    /// pre-update-hook for deletes is run, but the btree is otherwise
+    /// unchanged. This happens when the Delete is to be shortly followed by an
+    /// Insert with the same key, causing the btree entry to be overwritten.
+    ///
+    /// P1 must not be pseudo-table. It has to be a real table with multiple
+    /// rows.
+    ///
+    /// If P4 is not NULL then it points to a Table object. In this case either
+    /// the update or pre-update hook, or both, may be invoked. The P1 cursor
+    /// must have been positioned using NotFound prior to invoking this opcode
+    /// in this case. Specifically, if one is configured, the pre-update hook is
+    /// invoked if P4 is not NULL. The update-hook is invoked if one is
+    /// configured, P4 is not NULL, and the OPFLAG_NCHANGE flag is set in P2.
+    ///
+    /// If the OPFLAG_ISUPDATE flag is set in P2, then P3 contains the address
+    /// of the memory cell that contains the value that the rowid of the row
+    /// will be set to by the update.
     Delete {
         /// Cursor number
         cursor: i32,
     },
 
-    /// Build a record from registers
+    /// Convert P2 registers beginning with P1 into the record format use as a
+    /// data record in a database table or as a key in an index. The Column
+    /// opcode can decode the record later.
+    ///
+    /// P4 may be a string that is P2 characters long. The N-th character of the
+    /// string indicates the column affinity that should be used for the N-th
+    /// field of the index key.
+    ///
+    /// The mapping from character to affinity is given by the SQLITE_AFF_
+    /// macros defined in sqliteInt.h.
+    ///
+    /// If P4 is NULL then all index fields have the affinity BLOB.
+    ///
+    /// The meaning of P5 depends on whether or not the SQLITE_ENABLE_NULL_TRIM
+    /// compile-time option is enabled:
+    ///
+    /// * If SQLITE_ENABLE_NULL_TRIM is enabled, then the P5 is the index of the
+    /// right-most table that can be null-trimmed.
+    ///
+    /// * If SQLITE_ENABLE_NULL_TRIM is omitted, then P5 has the value
+    /// OPFLAG_NOCHNG_MAGIC if the MakeRecord opcode is allowed to accept
+    /// no-change records with serial_type 10. This value is only used inside an
+    /// assert() and does not affect the end result.
     MakeRecord {
         /// First register of data
         start: i32,
@@ -956,7 +1416,30 @@ pub enum Insn {
     // Index Operations
     // =========================================================================
 
-    /// Insert into an index
+    /// Register P2 holds an SQL index key made using the MakeRecord
+    /// instructions. This opcode writes that key into the index P1. Data for
+    /// the entry is nil.
+    ///
+    /// If P4 is not zero, then it is the number of values in the unpacked key
+    /// of reg(P2). In that case, P3 is the index of the first register for the
+    /// unpacked key. The availability of the unpacked key can sometimes be an
+    /// optimization.
+    ///
+    /// If P5 has the OPFLAG_APPEND bit set, that is a hint to the b-tree layer
+    /// that this insert is likely to be an append.
+    ///
+    /// If P5 has the OPFLAG_NCHANGE bit set, then the change counter is
+    /// incremented by this instruction. If the OPFLAG_NCHANGE bit is clear,
+    /// then the change counter is unchanged.
+    ///
+    /// If the OPFLAG_USESEEKRESULT flag of P5 is set, the implementation might
+    /// run faster by avoiding an unnecessary seek on cursor P1. However, the
+    /// OPFLAG_USESEEKRESULT flag must only be set if there have been no prior
+    /// seeks on the cursor or if the most recent seek used a key equivalent to
+    /// P2.
+    ///
+    /// This instruction only works for indices. The equivalent instruction for
+    /// tables is Insert.
     IdxInsert {
         /// Cursor number (index)
         cursor: i32,
@@ -964,7 +1447,17 @@ pub enum Insn {
         key: i32,
     },
 
-    /// Delete from an index
+    /// The content of P3 registers starting at register P2 form an unpacked
+    /// index key. This opcode removes that entry from the index opened by
+    /// cursor P1.
+    ///
+    /// If P5 is not zero, then raise an SQLITE_CORRUPT_INDEX error if no
+    /// matching index entry is found. This happens when running an UPDATE or
+    /// DELETE statement and the index entry to be updated or deleted is not
+    /// found. For some uses of IdxDelete (example: the EXCEPT operator) it does
+    /// not matter that no matching entry is found. For those cases, P5 is zero.
+    /// Also, do not raise this (self-correcting and non-critical) error if in
+    /// writable_schema mode.
     IdxDelete {
         /// Cursor number (index)
         cursor: i32,
@@ -974,7 +1467,11 @@ pub enum Insn {
         num_fields: i32,
     },
 
-    /// Get rowid from index cursor
+    /// Write into register P2 an integer which is the last entry in the record
+    /// at the end of the index key pointed to by cursor P1. This integer should
+    /// be the rowid of the table entry to which this index entry points.
+    ///
+    /// See also: Rowid, MakeRecord.
     IdxRowid {
         /// Cursor number
         cursor: i32,
@@ -986,9 +1483,20 @@ pub enum Insn {
     // Program Initialization
     // =========================================================================
 
-    /// Initialize program
+    /// Programs contain a single instance of this opcode as the very first
+    /// opcode.
     ///
-    /// Always the first instruction. Jump to `target` to begin execution.
+    /// If tracing is enabled (by the sqlite3_trace()) interface, then the UTF-8
+    /// string contained in P4 is emitted on the trace callback. Or if P4 is
+    /// blank, use the string returned by sqlite3_sql().
+    ///
+    /// If P2 is not zero, jump to instruction P2.
+    ///
+    /// Increment the value of P1 so that Once opcodes will jump the first time
+    /// they are evaluated for this run.
+    ///
+    /// If P3 is not zero, then it is an address to jump to if an SQLITE_CORRUPT
+    /// error is encountered.
     Init {
         /// Target address to begin execution
         target: i32,
@@ -998,7 +1506,13 @@ pub enum Insn {
     // Coroutines
     // =========================================================================
 
-    /// Initialize a coroutine
+    /// Set up register P1 so that it will Yield to the coroutine located at
+    /// address P3.
+    ///
+    /// If P2!=0 then the coroutine implementation immediately follows this
+    /// opcode. So jump over the coroutine implementation to address P2.
+    ///
+    /// See also: EndCoroutine
     InitCoroutine {
         /// Coroutine register
         coroutine: i32,
@@ -1008,13 +1522,26 @@ pub enum Insn {
         end: i32,
     },
 
-    /// Yield from a coroutine
+    /// Swap the program counter with the value in register P1. This has the
+    /// effect of yielding to a coroutine.
+    ///
+    /// If the coroutine that is launched by this instruction ends with Yield or
+    /// Return then continue to the next instruction. But if the coroutine
+    /// launched by this instruction ends with EndCoroutine, then jump to P2
+    /// rather than continuing with the next instruction.
+    ///
+    /// See also: InitCoroutine
     Yield {
         /// Coroutine register
         coroutine: i32,
     },
 
-    /// End a coroutine
+    /// The instruction at the address in register P1 is a Yield. Jump to the P2
+    /// parameter of that Yield. After the jump, the value register P1 is left
+    /// with a value such that subsequent OP_Yields go back to the this same
+    /// EndCoroutine instruction.
+    ///
+    /// See also: InitCoroutine
     EndCoroutine {
         /// Coroutine register
         coroutine: i32,
@@ -1024,7 +1551,11 @@ pub enum Insn {
     // Aggregation
     // =========================================================================
 
-    /// Step an aggregate function
+    /// Execute the xStep function for an aggregate. The function has P5
+    /// arguments. P4 is a pointer to the FuncDef structure that specifies the
+    /// function. Register P3 is the accumulator.
+    ///
+    /// The P5 arguments are taken from register P2 and its successors.
     AggStep {
         /// Function definition (P4)
         func_def: i32,
@@ -1036,7 +1567,15 @@ pub enum Insn {
         num_args: i32,
     },
 
-    /// Get final aggregate value
+    /// P1 is the memory location that is the accumulator for an aggregate or
+    /// window function. Execute the finalizer function for an aggregate and
+    /// store the result in P1.
+    ///
+    /// P2 is the number of arguments that the step function takes and P4 is a
+    /// pointer to the FuncDef for this function. The P2 argument is not used by
+    /// this opcode. It is only there to disambiguate functions that can take
+    /// varying numbers of arguments. The P4 argument is only needed for the
+    /// case where the step function was not previously called.
     AggFinal {
         /// Accumulator register
         accum: i32,
@@ -1048,10 +1587,28 @@ pub enum Insn {
     // Miscellaneous
     // =========================================================================
 
-    /// No operation (placeholder)
+    /// Do nothing. Continue downward to the next opcode.
     Noop,
 
-    /// Explain query plan (debugging)
+    /// This is the same as Noop during normal query execution. The purpose of
+    /// this opcode is to hold information about the query plan for the purpose
+    /// of EXPLAIN QUERY PLAN output.
+    ///
+    /// The P4 value is human-readable text that describes the query plan
+    /// element. Something like "SCAN t1" or "SEARCH t2 USING INDEX t2x1".
+    ///
+    /// The P1 value is the ID of the current element and P2 is the parent
+    /// element for the case of nested query plan elements. If P2 is zero then
+    /// this element is a top-level element.
+    ///
+    /// For loop elements, P3 is the estimated code of each invocation of this
+    /// element.
+    ///
+    /// As with all opcodes, the meanings of the parameters for Explain are
+    /// subject to change from one release to the next. Applications should not
+    /// attempt to interpret or use any of the information contained in the
+    /// Explain opcode. The information provided by this opcode is intended for
+    /// testing and debugging use only.
     Explain,
 
     // =========================================================================
