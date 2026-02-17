@@ -6,6 +6,8 @@ on:
 jobs:
   Publish:
     runs-on: ubuntu-latest
+    environment:
+      name: Publish
     container:
       image: rust:latest
     steps:

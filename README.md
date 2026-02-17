@@ -15,7 +15,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sqlite-vdbe = "0.0.1"
+sqlite-vdbe = "0.0.3"
 ```
 
 SQLite 3.51.2 is bundled and compiled automatically during build.
