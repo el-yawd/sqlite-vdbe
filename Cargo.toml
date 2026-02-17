@@ -1,0 +1,24 @@
+[package]
+name = "sqlite-vdbe"
+version = "0.1.0"
+edition = "2021"
+description = "Low-level access to SQLite's VDBE bytecode engine"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/user/sqlite-vdbe"
+keywords = ["sqlite", "vdbe", "bytecode", "database"]
+categories = ["database", "api-bindings"]
+
+[lib]
+name = "sqlite_vdbe"
+path = "src/lib.rs"
+
+[features]
+default = ["bundled"]
+bundled = []
+
+[build-dependencies]
+cc = "1.0"
+zip = "0.6"
+
+[dev-dependencies]
