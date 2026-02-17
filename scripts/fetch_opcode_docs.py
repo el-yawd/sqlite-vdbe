@@ -147,24 +147,51 @@ def fetch_opcode_docs(local_file=None):
     return opcodes
 
 
+def escape_brackets(text: str) -> str:
+    """Escape square brackets for Rust doc comments.
+
+    In Rust doc comments, [text] is interpreted as a link.
+    To display brackets literally, escape them as \\[text\\].
+    """
+    # Escape [ and ] with backslashes
+    # Pattern matches things like r[P1], reg[P3], argv[0], etc.
+    result = re.sub(r'\[([^\]]+)\]', r'\\[\1\\]', text)
+    return result
+
+
 def format_doc_comment(desc: str, indent: str = "    ") -> str:
     """Format description as Rust doc comment."""
     lines = []
+
+    # Escape square brackets for Rust doc comments
+    desc = escape_brackets(desc)
 
     # Split into paragraphs
     paragraphs = desc.split("\n\n")
 
     for i, para in enumerate(paragraphs):
-        # Wrap long lines at ~76 chars (accounting for indent + "/// ")
+        # Check if this paragraph starts with a list marker
+        is_list_item = para.lstrip().startswith(("* ", "- ", "• "))
+
+        # For list items, continuation lines need extra indentation
+        # to satisfy clippy::doc_lazy_continuation
+        continuation_prefix = "  " if is_list_item else ""
+
+        # Wrap long lines at ~72 chars (accounting for indent + "/// ")
         words = para.split()
         current_line = ""
+        is_first_line = True
 
         for word in words:
-            if len(current_line) + len(word) + 1 > 72:
+            max_len = 72 if is_first_line else (72 - len(continuation_prefix))
+            if len(current_line) + len(word) + 1 > max_len:
                 lines.append(f"{indent}/// {current_line}")
-                current_line = word
+                current_line = continuation_prefix + word
+                is_first_line = False
+            elif current_line:
+                current_line = current_line + " " + word
             else:
-                current_line = f"{current_line} {word}".strip()
+                current_line = word
 
         if current_line:
             lines.append(f"{indent}/// {current_line}")
