@@ -2,6 +2,7 @@
 name = "sqlite_vdbe"
 version = "0.0.1"
 edition = "2024"
+rust-version = "1.93"
 description = "Low-level access to SQLite's VDBE bytecode engine"
 license = "MIT"
 readme = "README.md"

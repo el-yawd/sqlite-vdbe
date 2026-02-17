@@ -104,11 +104,6 @@ builder.add(Insn::Integer { value: 42, dest: r1 });  // Executed
 
 This crate compiles SQLite with `SQLITE_THREADSAFE=0` for simplicity. All types are `!Send` and `!Sync`. Use one connection per thread.
 
-When running tests, use `--test-threads=1`:
-```bash
-cargo test -- --test-threads=1
-```
-
 ## Features
 
 - `bundled` (default): Automatically downloads and compiles SQLite 3.45.0
